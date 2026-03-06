@@ -1,4 +1,5 @@
 #include <iostream>
+#include "Server.hpp"
 
 int	main(int argc, char *argv[])
 {
@@ -7,4 +8,5 @@ int	main(int argc, char *argv[])
 		std::cerr << "Usage: " << argv[0] << " [configuration file]" << std::endl;
 		return (1);
 	}
+	Server	server1;
 }

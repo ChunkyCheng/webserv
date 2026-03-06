@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:29:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/06 14:48:05 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/06 17:20:28 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,8 @@
 
 int main()
 {
-	const char *raw_request = "GET /index.html HTTP/1.1\r\nHost: example.com\r\nUser-Agent: Mozilla/5.0\r\n\r\n";
+	const char *raw_request = "GET /index.html HTTP/1.1\r\nHost: example.com       \r\nUser-Agent: Mozilla/5.0\r\n\r\n";
 	HttpRequest request;
 	request.parse(raw_request);
 	return 0;
 }
-

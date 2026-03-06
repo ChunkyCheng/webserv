@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/06 15:22:59 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/06 16:21:59 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ class HttpRequest
 		std::string _version; // The HTTP version, e.g., "HTTP/1.1"
 		std::map<std::string, std::string> _headers; // Key-value pairs of headers, e.g., "Host: example.com"
 		std::string _body; // After the empty line \r\n\r\n, whatever is left is the Body.
-	
+
 	public:
 		void	parse(const char *rawText);
 

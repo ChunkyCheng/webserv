@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/06 16:12:52 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/06 17:27:59 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,12 +36,12 @@ std::map<std::string, std::string> HttpRequest::getHeaders() const
 void HttpRequest::parse(const char *rawText)
 {
 	std::stringstream	ss(rawText);
-	std::string			line;
-	std::string			extra;
+	std::string			line, extra;
 
 	// getline(stream, str, delim); input stream from where characters are read
 	// str where the input is stored after being read from the stream
 	// delim is optional, default is '\n'
+	// --- Parse request line ---
 	std::getline(ss, line);
 	if (line.empty() || line[line.size() - 1] != '\r')
 	{
@@ -74,6 +74,33 @@ void HttpRequest::parse(const char *rawText)
 		return ;
 	}
 	std::cout << _method << "\n" << _path << "\n" << _version << "\n"; // debug
+
+	// --- Parse headers ---
+	while (std::getline(ss, line) && line != "\r")
+	{
+		if (line.empty() || line[line.size() - 1] != '\r')
+		{
+			std::cout << "400 Bad Request: Missing CR\n";
+			return ;
+		}
+		else if (!line.empty() && line[line.size() - 1] == '\r')
+		{
+			line.erase(line.size() - 1);
+		}
+		size_t colon = line.find(':');
+		if (colon == std::string::npos)
+		{
+			std::cout << "400 Bad Request: Invalid Header\n";
+			return ;
+		}
+		std::string key = line.substr(0, colon);
+		std::cout << key << "\n";
+		std::string value = line.substr(colon + 1);
+		value.erase(0, value.find_first_not_of(" \t")); // Search string from the beginning for the first char that is NOT a space or tab
+		value.erase(value.find_last_not_of(" \t") + 1);
+		std::cout << value << "\n";
+		_headers[key] = value;
+	}
 }
 
 // NGINX, the state machine

@@ -2,7 +2,7 @@ CXX			=	c++
 CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3
 
 SERVER_DIR		=	Server
-SERVER_FILES	=	Server.cpp
+SERVER_FILES	=	WebServer.cpp	Server.cpp	Client.cpp
 
 MODULES		=	SERVER
 

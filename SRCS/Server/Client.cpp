@@ -1,10 +1,13 @@
 #include "Client.hpp"
+#include <unistd.h>
 
 Client::Client(void)
+	:_socket(-1)
 {
 }
 
 Client::Client(const Client& other)
+	:_socket(-1)
 {
 	(void)other;
 }

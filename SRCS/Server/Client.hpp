@@ -1,19 +1,23 @@
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
 
-# include <sys/epoll.h>
+# include "ClientSocket.hpp"
+
+class	Server;
 
 class	Client
 {
 	public:
+		Client(int socket_fd, Server* server);
+		~Client(void);
+	private:
 		Client(void);
 		Client(const Client& other);
 		Client&	operator=(const Client& other);
-		~Client(void);
 
-	protected:
 	private:
-		const int	_socket;
+		const ClientSocket	_socket;
+		Server const*		_server;
 };
 
 #endif

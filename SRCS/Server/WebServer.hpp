@@ -4,18 +4,24 @@
 # include <stdexcept>
 # include <vector>
 # include "Server.hpp"
+# include "Client.hpp"
 
 class	WebServer
 {
 	public:
 		WebServer(void);
+		~WebServer(void);
+	private:
 		WebServer(const WebServer& other);
 		WebServer&	operator=(const WebServer& other);
-		~WebServer(void);
+	
+	public:
+		int		getEpollfd(void) const;
+		void	createClient(int fd, Server& server);
 
-	protected:
 	private:
 		std::vector<Server*>	_servers;
+		std::vector<Client*>	_clients;
 		int						_epollfd;
 	
 	public:

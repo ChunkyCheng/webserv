@@ -3,6 +3,7 @@
 
 # include <stdexcept>
 # include <vector>
+# include "Epoll.hpp"
 # include "Server.hpp"
 # include "Client.hpp"
 
@@ -16,19 +17,17 @@ class	WebServer
 		WebServer&	operator=(const WebServer& other);
 	
 	public:
-		int		getEpollfd(void) const;
 		void	createClient(int fd, Server& server);
+		void	runServerLoop(void);
+		
+		static void	stopServerLoop(void);
 
 	private:
+		Epoll					_epoll;
 		std::vector<Server*>	_servers;
 		std::vector<Client*>	_clients;
-		int						_epollfd;
-	
-	public:
-		class	EpollCreateException : public std::exception
-		{
-			const char*	what(void) const throw();
-		};
+
+		static bool				_runServer;
 };
 
 #endif

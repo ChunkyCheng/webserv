@@ -2,8 +2,9 @@ CXX			=	c++
 CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 #-fsanitize=address
 
 SERVER_DIR		=	Server
-SERVER_FILES	=	WebServer.cpp	Server.cpp	ServerSocket.cpp	\
-									Client.cpp	ClientSocket.cpp
+SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
+					Server.cpp			ServerSocket.cpp	\
+					Client.cpp			ClientSocket.cpp
 
 MODULES		=	SERVER
 
@@ -41,8 +42,8 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 clean:
 	@printf "$(RED)"
-	@if [ -d $(OBJDIR) ]; then						\
-		rm -rf $(OBJDIR);							\
+	@if [ -d $(OBJ_DIR) ]; then						\
+		rm -rf $(OBJ_DIR);							\
 		printf "Removed $(NAME) OBJS directory\n";	\
 	else											\
 		printf "$(NAME) objects not found\n"; fi;

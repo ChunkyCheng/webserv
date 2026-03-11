@@ -19,7 +19,8 @@ class	Server
 		Server&	operator=(const Server& other);
 
 	public:
-		WebServer&	getWebServer(void);
+		WebServer&					getWebServer(void);
+		std::vector<ServerSocket*>&	getListeningSockets(void);
 
 	private:
 		WebServer&					_webserver;
@@ -27,6 +28,12 @@ class	Server
 		std::vector<ServerSocket*>	_listening_sockets;
 
 		void	_open_listening_sockets(void);
+
+	public:
+		class	NoListeningSocketsException : public std::exception
+		{
+			const char*	what(void) const throw();
+		};
 };
 
 #endif

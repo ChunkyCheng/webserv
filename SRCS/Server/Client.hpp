@@ -15,9 +15,12 @@ class	Client
 		Client(const Client& other);
 		Client&	operator=(const Client& other);
 
+	public:
+		ClientSocket&	getSocket(void);
+
 	private:
-		const ClientSocket	_socket;
-		Server const*		_server;
+		ClientSocket	_socket;
+		Server const*	_server;
 };
 
 #endif

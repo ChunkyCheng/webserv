@@ -5,7 +5,8 @@
 Server::Server(WebServer& webserver)
 	:_webserver(webserver)
 {
-	_socket_addr.push_back("0.0.0.0:8080");
+	_socket_addr.push_back("127.0.0.1:8080");
+	_socket_addr.push_back("0.0.0.0:12345");
 	_open_listening_sockets();
 }
 
@@ -18,6 +19,11 @@ Server::~Server(void)
 WebServer&	Server::getWebServer(void)
 {
 	return(_webserver);
+}
+
+std::vector<ServerSocket*>&	Server::getListeningSockets(void)
+{
+	return (_listening_sockets);
 }
 
 void	Server::_open_listening_sockets(void)
@@ -33,4 +39,11 @@ void	Server::_open_listening_sockets(void)
 			std::cerr << e.what() << std::endl;
 		}
 	}
+	if (_listening_sockets.size() == 0)
+		throw (NoListeningSocketsException());
+}
+
+const char*	Server::NoListeningSocketsException::what(void) const throw()
+{
+	return ("Server::NoListeningSocketsException");
 }

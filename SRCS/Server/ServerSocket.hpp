@@ -17,10 +17,11 @@ class	ServerSocket : public ISocket
 		ServerSocket&	operator=(const ServerSocket& other);
 
 	public:
+		int		getFd(void) const;
 		void	handleEvent(void);
 
 	private:
-		Server&	_server;		
+		Server&	_server;
 		int		_fd;
 
 		void	_open_socket(std::string& ip, std::string& port);
@@ -34,7 +35,15 @@ class	ServerSocket : public ISocket
 		{
 			const char*	what(void) const throw();
 		};
+		class	SocketOptionException : public std::exception
+		{
+			const char* what(void) const throw();
+		};
 		class	BindException : public std::exception
+		{
+			const char*	what(void) const throw();
+		};
+		class	ListenException : public std::exception
 		{
 			const char*	what(void) const throw();
 		};

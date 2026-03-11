@@ -11,6 +11,11 @@ ClientSocket::~ClientSocket(void)
 		close(_fd);
 }
 
+int	ClientSocket::getFd(void) const
+{
+	return (_fd);
+}
+
 void	ClientSocket::handleEvent(void)
 {
 }

@@ -5,15 +5,12 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 
+bool	WebServer::_runServer = false;
+
 WebServer::WebServer(void)
 {
-	_epollfd = epoll_create(1);
-	if (_epollfd == -1)
-	{
-		std::cerr << strerror(errno) << std::endl;
-		throw (EpollCreateException());
-	}
 	_servers.push_back(new Server(*this));
+	_epoll.addServerToPoll(*_servers[0]);
 }
 
 WebServer::~WebServer(void)
@@ -22,21 +19,26 @@ WebServer::~WebServer(void)
 		delete _servers[i];
 	for (unsigned int i = 0; i < _clients.size(); ++i)
 		delete _clients[i];
-	if (_epollfd != -1)
-		close(_epollfd);
-}
-
-int	WebServer::getEpollfd(void) const
-{
-	return (_epollfd);
 }
 
 void	WebServer::createClient(int fd, Server& server)
 {
-	_clients.push_back(new Client(fd, &server));
+	Client*	newClient = new Client(fd, &server);
+
+	_clients.push_back(newClient);
+	_epoll.addClientToPoll(newClient->getSocket());
 }
 
-const char*	WebServer::EpollCreateException::what(void) const throw()
+void	WebServer::runServerLoop(void)
 {
-	return ("WebServer::EpollCreateExcpetion");
+	WebServer::_runServer = true;
+	while (WebServer::_runServer)
+	{
+		_epoll.runEvents();
+	}
+}
+
+void	WebServer::stopServerLoop(void)
+{
+	WebServer::_runServer = false;
 }

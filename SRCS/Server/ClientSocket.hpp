@@ -16,6 +16,7 @@ class	ClientSocket : public ISocket
 		ClientSocket&	operator=(const ClientSocket& other);
 
 	public:
+		int		getFd(void) const;
 		void	handleEvent(void);
 
 	private:

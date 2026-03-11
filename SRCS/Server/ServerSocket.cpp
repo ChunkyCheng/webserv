@@ -9,14 +9,10 @@ ServerSocket::ServerSocket(Server& server, std::string& socket_addr)
 {
 	std::string			ip;
 	std::string			port;
-	struct epoll_event	epoll_event;
 
 	ip = socket_addr.substr(0, socket_addr.find(':'));
 	port = socket_addr.substr(socket_addr.find(':') + 1);
-	_open_socket(ip, port);
-	epoll_event.events = EPOLLIN;
-	epoll_event.data.ptr = this;
-	epoll_ctl(_server.getWebServer().getEpollfd(), EPOLL_CTL_ADD, _fd, &epoll_event);
+	_open_socket(ip, port);	
 }
 
 ServerSocket::~ServerSocket(void)
@@ -30,6 +26,7 @@ void	ServerSocket::_open_socket(std::string& ip, std::string& port)
 	struct addrinfo		hints;
 	struct addrinfo*	res;
 	int					gai_ret;
+	int					opt;
 
 	hints = (struct addrinfo){AI_PASSIVE, AF_INET, SOCK_STREAM, 0, 0, NULL, NULL, NULL};
 	gai_ret = getaddrinfo(ip.c_str(), port.c_str(), &hints, &res);
@@ -45,6 +42,13 @@ void	ServerSocket::_open_socket(std::string& ip, std::string& port)
 		std::cerr << strerror(errno) << std::endl;
 		throw (SocketCreateException());
 	}
+	opt = 1;
+	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+	{
+		freeaddrinfo(res);
+		std::cerr << strerror(errno) << std::endl;
+		throw (SocketOptionException());
+	}
 	if (bind(_fd, res->ai_addr, res->ai_addrlen) == -1)
 	{
 		freeaddrinfo(res);
@@ -52,6 +56,16 @@ void	ServerSocket::_open_socket(std::string& ip, std::string& port)
 		throw (BindException());
 	}
 	freeaddrinfo(res);
+	if (listen(_fd, SOMAXCONN) == -1)
+	{
+		std::cerr << strerror(errno) << std::endl;
+		throw (ListenException());
+	}
+}
+
+int	ServerSocket::getFd(void) const
+{
+	return (_fd);
 }
 
 void	ServerSocket::handleEvent(void)
@@ -64,6 +78,7 @@ void	ServerSocket::handleEvent(void)
 		std::cerr << strerror(errno) << std::endl;
 		return ;
 	}
+	std::cout << "Client connected on socket " << _fd << std::endl;
 	_server.getWebServer().createClient(client_fd, _server);
 }
 
@@ -77,7 +92,17 @@ const char*	ServerSocket::SocketCreateException::what(void) const throw()
 	return ("ServerSocket::SocketCreateException");
 }
 
+const char*	ServerSocket::SocketOptionException::what(void) const throw()
+{
+	return ("ServerSocket::SocketOptionException");
+}
+
 const char*	ServerSocket::BindException::what(void) const throw()
 {
 	return ("ServerSocket::BindException");
+}
+
+const char*	ServerSocket::ListenException::what(void) const throw()
+{
+	return ("ServerSocket::ListenException");
 }

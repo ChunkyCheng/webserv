@@ -9,3 +9,8 @@ Client::Client(int socket_fd, Server* server)
 Client::~Client(void)
 {
 }
+
+ClientSocket& Client::getSocket(void)
+{
+	return (_socket);
+}

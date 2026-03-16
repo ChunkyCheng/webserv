@@ -2,6 +2,7 @@
 # define CLIENTSOCKET_HPP
 
 # include "ISocket.hpp"
+# include "socket.h"
 
 class	Client;
 
@@ -17,7 +18,7 @@ class	ClientSocket : public ISocket
 
 	public:
 		int		getFd(void) const;
-		void	handleEvent(void);
+		void	handleEvent(int events);
 
 	private:
 		Client&		_client;

@@ -17,7 +17,7 @@ SRCS		=	$(addprefix $(SRC_DIR)/, $(SRC_FILES) $(foreach M,$(MODULES), $($(M)_SRC
 OBJ_DIR	=	OBJS
 OBJS	=	$(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
-IFLAGS = $(addprefix -I$(SRC_DIR)/, $(foreach M,$(MODULES), $($(M)_DIR)))
+IFLAGS = $(addprefix -I$(SRC_DIR)/, $(foreach M,$(MODULES), $($(M)_DIR))) -IHEADERS
 
 ##########################################################################################
 

@@ -24,26 +24,31 @@ Epoll::~Epoll(void)
 		close(_fd);
 }
 
-void	Epoll::addServerToPoll(Server& server)
+void	Epoll::addSocketToPoll(ISocket& socket)
 {
-	const std::vector<ServerSocket*>&	listeningSockets = server.getListeningSockets();
-	struct epoll_event			epoll_event;
+	struct epoll_event	epoll_event;
 
 	epoll_event.events = EPOLLIN;
-	for (unsigned int i = 0; i < listeningSockets.size(); ++i)
-	{
-		epoll_event.data.ptr = listeningSockets[i];
-		epoll_ctl(_fd, EPOLL_CTL_ADD, listeningSockets[i]->getFd(), &epoll_event);
-	}
+	epoll_event.data.ptr = &socket;
+	epoll_ctl(_fd, EPOLL_CTL_ADD, socket.getFd(), &epoll_event);
 }
 
-void	Epoll::addClientToPoll(ClientSocket& client_socket)
+void	Epoll::modAddSendEvent(ISocket& socket)
 {
 	struct epoll_event	epoll_event;
 
 	epoll_event.events = EPOLLIN | EPOLLOUT;
-	epoll_event.data.ptr = &client_socket;
-	epoll_ctl(_fd, EPOLL_CTL_ADD, client_socket.getFd(), &epoll_event);
+	epoll_event.data.ptr = &socket;
+	epoll_ctl(_fd, EPOLL_CTL_MOD, socket.getFd(), &epoll_event);
+}
+
+void	Epoll::modRemoveSendEvent(ISocket& socket)
+{
+	struct epoll_event	epoll_event;
+
+	epoll_event.events = EPOLLIN;
+	epoll_event.data.ptr = &socket;
+	epoll_ctl(_fd, EPOLL_CTL_MOD, socket.getFd(), &epoll_event);
 }
 
 void	Epoll::runEvents(void)
@@ -53,7 +58,7 @@ void	Epoll::runEvents(void)
 
 	event_count = epoll_wait(_fd, events, _MAX_EVENTS, 0);
 	for (int i = 0; i < event_count; ++i)
-		static_cast<ISocket*>(events[i].data.ptr)->handleEvent();
+		static_cast<ISocket*>(events[i].data.ptr)->handleEvent(events[i].events);
 }
 
 const char*	Epoll::CreateException::what(void) const throw()

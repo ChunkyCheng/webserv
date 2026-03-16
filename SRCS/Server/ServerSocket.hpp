@@ -2,9 +2,8 @@
 # define SERVERSOCKET_HPP
 
 # include "ISocket.hpp"
+# include "socket.h"
 # include <string>
-
-class	Server;
 
 class	ServerSocket : public ISocket
 {
@@ -18,7 +17,7 @@ class	ServerSocket : public ISocket
 
 	public:
 		int		getFd(void) const;
-		void	handleEvent(void);
+		void	handleEvent(int events);
 
 	private:
 		Server&	_server;

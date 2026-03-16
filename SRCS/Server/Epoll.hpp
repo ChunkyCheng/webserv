@@ -3,9 +3,7 @@
 
 # include <stdexcept>
 
-class	Server;
-class	Client;
-class	ClientSocket;
+class	ISocket;
 
 class	Epoll
 {
@@ -17,8 +15,9 @@ class	Epoll
 		Epoll&	operator=(const Epoll& other);
 
 	public:
-		void	addServerToPoll(Server& server);
-		void	addClientToPoll(ClientSocket& client);
+		void	addSocketToPoll(ISocket& socket);
+		void	modAddSendEvent(ISocket& socket);
+		void	modRemoveSendEvent(ISocket& socket);
 		void	runEvents(void);
 
 	private:

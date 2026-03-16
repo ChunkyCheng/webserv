@@ -18,7 +18,8 @@ class	ISocket
 		ISocket&	operator=(const ISocket& other);
 	
 	public:
-		virtual void	handleEvent(void) = 0;
+		virtual int		getFd(void) const = 0;
+		virtual void	handleEvent(int events) = 0;
 };
 
 #endif

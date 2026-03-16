@@ -1,7 +1,4 @@
 #include "ServerSocket.hpp"
-#include <iostream>
-#include <sys/epoll.h>
-#include "WebServer.hpp"
 #include "Server.hpp"
 
 ServerSocket::ServerSocket(Server& server, std::string& socket_addr)
@@ -61,6 +58,7 @@ void	ServerSocket::_open_socket(std::string& ip, std::string& port)
 		std::cerr << strerror(errno) << std::endl;
 		throw (ListenException());
 	}
+	fcntl(_fd, F_SETFL, O_NONBLOCK);
 }
 
 int	ServerSocket::getFd(void) const
@@ -68,18 +66,10 @@ int	ServerSocket::getFd(void) const
 	return (_fd);
 }
 
-void	ServerSocket::handleEvent(void)
+void	ServerSocket::handleEvent(int events)
 {
-	int	client_fd;
-
-	client_fd = accept(_fd, NULL, NULL);
-	if (client_fd == -1)
-	{
-		std::cerr << strerror(errno) << std::endl;
-		return ;
-	}
-	std::cout << "Client connected on socket " << _fd << std::endl;
-	_server.getWebServer().createClient(client_fd, _server);
+	(void)events;
+	_server.createClient(_fd);
 }
 
 const char*	ServerSocket::GaiException::what(void) const throw()

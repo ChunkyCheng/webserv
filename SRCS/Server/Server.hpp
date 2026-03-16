@@ -1,17 +1,16 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# include <vector>
-# include <string>
-# include "Client.hpp"
+# include "socket.h"
 # include "ServerSocket.hpp"
 
 class	WebServer;
+class	Epoll;
 
 class	Server
 {
 	public:
-		Server(WebServer& webserver);
+		Server(WebServer& webserver, Epoll& epoll);
 		~Server(void);
 	private:
 		Server(void);
@@ -19,13 +18,15 @@ class	Server
 		Server&	operator=(const Server& other);
 
 	public:
-		WebServer&					getWebServer(void);
-		std::vector<ServerSocket*>&	getListeningSockets(void);
+		void		createClient(int listening_fd);
+		void		deleteClient(int client_fd);
 
 	private:
 		WebServer&					_webserver;
+		Epoll&						_epoll;
 		std::vector<std::string>	_socket_addr;
 		std::vector<ServerSocket*>	_listening_sockets;
+		std::map<int, Client*>		_clients;
 
 		void	_open_listening_sockets(void);
 

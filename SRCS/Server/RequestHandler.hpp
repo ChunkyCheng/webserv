@@ -6,12 +6,17 @@
 class	RequestHandler
 {
 	public:
+		RequestHandler(Server& server, std::string& req_buff, std::string& res_buff);
+		~RequestHandler(void);
+	private:
 		RequestHandler(void);
 		RequestHandler(const RequestHandler& other);
 		RequestHandler&	operator=(const RequestHandler& other);
-		~RequestHandler(void);
 
-		bool	checkResponseReady(void);
+	public:
+		bool	checkRequestComplete(void) const;
+		void	continueBuildResponse(void);
+		bool	checkResponseComplete(void) const;
 
 	protected:
 	private:

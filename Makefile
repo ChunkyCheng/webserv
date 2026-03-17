@@ -4,7 +4,8 @@ CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 #-fsanitize=address
 SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 					Server.cpp			ServerSocket.cpp	\
-					Client.cpp			ClientSocket.cpp
+					Client.cpp			ClientSocket.cpp	\
+					RequestHandler.cpp
 
 MODULES		=	SERVER
 

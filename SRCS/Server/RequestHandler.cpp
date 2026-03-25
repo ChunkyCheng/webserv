@@ -12,7 +12,21 @@ RequestHandler::~RequestHandler(void)
 
 bool	RequestHandler::checkRequestComplete(void) const
 {
-	return (false);
+	size_t	header_end;
+
+	header_end = _request_buff.find("/r/n/r/n");
+	// Check if header finished loading, if returns 0, return false
+	if (header_end == std::string::npos)
+		return (false);
+	// Only return true if found the header
+	// Find the method, POST usually have body
+	if (_request_buff.compare(0, 4, "POST") == 0)
+	{
+		size_t pos = _request_buff.find("Content-Length: ");
+		
+	}
+	// For GET, DELETE, once /r/n/r/n found, usually means done so return true to signal the start of response processing
+	return (true);
 }
 
 void	RequestHandler::continueBuildResponse(void)

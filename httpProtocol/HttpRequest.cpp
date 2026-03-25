@@ -1,17 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   request.cpp                                        :+:      :+:    :+:   */
+/*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/06 17:27:59 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/25 17:30:46 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 
-#include "request.hpp"
+#include "HttpRequest.hpp"
+
+HttpRequest::HttpRequest() : _state(READING_HEADER) {}
+
+RequestState HttpRequest::getState() const
+{
+	return (_state);
+}
+
+
 
 std::string HttpRequest::getMethod() const
 {
@@ -45,7 +54,7 @@ void HttpRequest::parse(const char *rawText)
 	std::getline(ss, line);
 	if (line.empty() || line[line.size() - 1] != '\r')
 	{
-		std::cout << "400 Bad Request: Missing CR\n";
+		std::cout << "400 Bad Request: Missing CR\n"; // User sent gibberish
 		return ;
 	}
 	else if (!line.empty() && line[line.size() - 1] == '\r')
@@ -65,7 +74,7 @@ void HttpRequest::parse(const char *rawText)
 	}
 	if (_method != "GET" && _method != "POST" && _method != "DELETE")
 	{
-		std::cout << "405 Method Not Allowed\n";
+		std::cout << "405 Method Not Allowed\n"; //Tried to POST to a file that only allows GET
 		return ;
 	}
 	if (_version != "HTTP/1.1" && _version != "HTTP/1.0")

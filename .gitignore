@@ -3,4 +3,3 @@ webserv
 .*
 !.gitignore
 OBJS/
-httpProtocol/request

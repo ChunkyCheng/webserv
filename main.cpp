@@ -1,10 +1,14 @@
-#include <iostream>
+#include "CGIHandler.hpp"
 
 int	main(int argc, char *argv[])
 {
-	if (argc > 2)
-	{
-		std::cerr << "Usage: " << argv[0] << " [configuration file]" << std::endl;
-		return (1);
-	}
+	(void)argc;
+	(void)argv;
+	HttpRequest req;
+
+	req.parse("GET /test.py HTTP/1.1\r\n\r\n");
+	CGIHandler handler(req, "/bin/python3", "scripts/test.py");
+	HttpResponse res = handler.execute();
+	std::cout << res.body << std::endl;
+	return (0);
 }

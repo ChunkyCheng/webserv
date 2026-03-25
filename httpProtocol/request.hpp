@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*   By: akok <akok@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/06 16:21:59 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/25 14:14:53 by akok             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,4 +39,5 @@ class HttpRequest
 		std::string getPath() const;
 		std::string getVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
+		std::string getBody() const;
 };

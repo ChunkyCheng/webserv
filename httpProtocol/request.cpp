@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*   By: akok <akok@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/06 17:27:59 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/25 16:31:34 by akok             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,11 @@ std::string HttpRequest::getVersion() const
 std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
 	return (_headers);
+}
+
+std::string HttpRequest::getBody() const
+{
+	return (_body);
 }
 
 void HttpRequest::parse(const char *rawText)
@@ -73,7 +78,7 @@ void HttpRequest::parse(const char *rawText)
 		std::cout << "505 HTTP Version Not Supported\n";
 		return ;
 	}
-	std::cout << _method << "\n" << _path << "\n" << _version << "\n"; // debug
+	// std::cout << _method << "\n" << _path << "\n" << _version << "\n"; // debug
 
 	// --- Parse headers ---
 	while (std::getline(ss, line) && line != "\r")

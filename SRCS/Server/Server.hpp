@@ -20,13 +20,15 @@ class	Server
 	public:
 		void		createClient(int listening_fd);
 		void		deleteClient(int client_fd);
-
+	
 	private:
 		WebServer&					_webserver;
 		Epoll&						_epoll;
 		std::vector<std::string>	_socket_addr;
 		std::vector<ServerSocket*>	_listening_sockets;
 		std::map<int, Client*>		_clients;
+
+		
 
 		void	_open_listening_sockets(void);
 

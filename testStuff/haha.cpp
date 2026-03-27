@@ -1,16 +1,16 @@
-#include "RequestHandler.hpp"
-#include <cstdlib>
-#include "../../httpProtocol/Utils.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   haha.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/03/27 16:20:52 by yelu              #+#    #+#             */
+/*   Updated: 2026/03/27 16:21:23 by yelu             ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-RequestHandler::RequestHandler(Server& server,
-std::string& req_buff, std::string& res_buff)
-	:_server(server), _request_buff(req_buff), _response_buff(res_buff)
-{
-}
-
-RequestHandler::~RequestHandler(void)
-{
-}
+#include "haha.hpp"
 
 bool	RequestHandler::checkRequestComplete(void) const
 {
@@ -32,8 +32,9 @@ bool	RequestHandler::checkRequestComplete(void) const
 			size_t val_start = pos + 16;
 			size_t val_end = _request_buff.find("\r\n", val_start);
 
-			std::string	raw_val = _request_buff.substr(val_start, val_end - val_start);
-			std::string clean_val = utils_trim(raw_val);
+			long content_length = std::atol(_request_buff.substr(val_start, val_end - val_start).c_str());
+			size_t current_body_size = _request_buff.size() - (header_end + 4);
+
 			// It is possible the same client send another request immediately, so the current body
 			// size will be longer than the content length intended, it accounted for the second's request too
 			// the most important thing is that it finished fetching the first request, so return true first
@@ -50,19 +51,10 @@ bool	RequestHandler::checkRequestComplete(void) const
 	}
 	
 	// If we didn't find content-length, maybe it's "chunked?"
-	if (_request_buff.find("Transfer-Encoding: chunked") != std::string::npos)
+	if (_request_buff.find("Transfer-Encoding: chunked") != )
 	// For GET, DELETE, once /r/n/r/n found, usually means done so return true to signal the start of response processing
 	return (true);
 
 	// PROBLEM: What if body is not found? This logic immediately returns true
 	// Needed reading: Transfer-encoding: chunked
-}
-
-void	RequestHandler::continueBuildResponse(void)
-{
-}
-
-bool	RequestHandler::checkResponseComplete(void) const
-{
-	return (true);
 }

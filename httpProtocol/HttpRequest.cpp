@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/25 17:30:46 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/27 13:57:57 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@ RequestState HttpRequest::getState() const
 {
 	return (_state);
 }
-
 
 
 std::string HttpRequest::getMethod() const

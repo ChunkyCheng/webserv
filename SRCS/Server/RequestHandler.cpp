@@ -25,8 +25,14 @@ bool	RequestHandler::checkRequestComplete(void) const
 		size_t pos = _request_buff.find("Content-Length: ");
 		
 	}
+	
+	// If we didn't find content-length, maybe it's "chunked?"
+	if (_request_buff.find("Transfer-Encoding: chunked") != )
 	// For GET, DELETE, once /r/n/r/n found, usually means done so return true to signal the start of response processing
 	return (true);
+
+	// PROBLEM: What if body is not found? This logic immediately returns true
+	// Needed reading: Transfer-encoding: chunked
 }
 
 void	RequestHandler::continueBuildResponse(void)

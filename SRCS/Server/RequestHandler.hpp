@@ -3,7 +3,6 @@
 
 #include "socket.h"
 #include "Server.hpp"
-#include "../../httpProtocol/HttpRequest.hpp"
 
 class	RequestHandler
 {
@@ -25,7 +24,6 @@ class	RequestHandler
 		const Server&	_server;
 		std::string&	_request_buff;
 		std::string&	_response_buff;
-		HttpRequest		_httpRequest;
 };
 
 #endif

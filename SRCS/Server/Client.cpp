@@ -1,6 +1,7 @@
 #include "Client.hpp"
 #include "Server.hpp"
 #include "Epoll.hpp"
+#include "../../httpProtocol/HttpRequest.hpp"
 
 Client::Client(int socket_fd, Server& server, Epoll& epoll)
 	:_socket(*this, socket_fd), _server(server), _epoll(epoll),
@@ -34,7 +35,11 @@ void	Client::recvMessage(void)
 	{
 		_request_buff += std::string(raw, len);
 		if (_requestHandler.checkRequestComplete())
+		{
+			_httpRequest.parse(_request_buff);
+			_request_buff.clear(); // IMPORTANT: Now it clears everything, what if there is multiple, must handle later
 			_epoll.modAddSendEvent(_socket);
+		}
 	}
 }
 

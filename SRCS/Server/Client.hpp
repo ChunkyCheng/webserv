@@ -4,6 +4,7 @@
 # include "socket.h"
 # include "ClientSocket.hpp"
 # include "RequestHandler.hpp"
+# include "../../httpProtocol/HttpRequest.hpp"
 
 class	Epoll;
 class	RequestHandler;
@@ -30,6 +31,7 @@ class	Client
 		RequestHandler	_requestHandler;
 		std::string		_request_buff;
 		std::string		_response_buff;
+		HttpRequest		_httpRequest;
 };
 
 #endif

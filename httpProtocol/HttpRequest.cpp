@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/27 13:57:57 by yelu             ###   ########.fr       */
+/*   Updated: 2026/03/29 14:01:25 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,9 +41,9 @@ std::map<std::string, std::string> HttpRequest::getHeaders() const
 	return (_headers);
 }
 
-void HttpRequest::parse(const char *rawText)
+void HttpRequest::parse(const std::string& request_buff)
 {
-	std::stringstream	ss(rawText);
+	std::stringstream	ss(request_buff);
 	std::string			line, extra;
 
 	// getline(stream, str, delim); input stream from where characters are read
@@ -109,6 +109,10 @@ void HttpRequest::parse(const char *rawText)
 		std::cout << value << "\n";
 		_headers[key] = value;
 	}
+
+	std::pair<std::string::iterator, std::string::iterator> range;
+	_body = ss.str().substr(ss.tellg());
+	_state = FINISHED;
 }
 
 // NGINX, the state machine

@@ -52,3 +52,27 @@ void	Client::sendMessage(void)
 	else
 		_response_buff.erase(0, len);
 }
+
+// void Client::sendMessage(void)
+// {
+//     // 1. If we have a huge file, we might need to read more of it into the buffer
+//     if (!_requestHandler.checkResponseComplete() && _response_buff.size() < BUFF_SIZE)
+//     {
+//         _requestHandler.continueBuildResponse(); // Reads more from disk/CGI into _response_buff
+//     }
+
+//     // 2. Send whatever is currently in the buffer
+//     ssize_t sent = send(_socket, _response_buff.c_str(), _response_buff.size(), 0);
+    
+//     if (sent > 0)
+//     {
+//         _response_buff.erase(0, sent); // Remove sent bytes
+//     }
+
+//     // 3. Only stop the write event if building is done AND buffer is empty
+//     if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
+//     {
+//         _epoll.modRemoveSendEvent(_socket);
+//         // If connection: close, close(socket). If keep-alive, mod for EPOLLIN.
+//     }
+// }

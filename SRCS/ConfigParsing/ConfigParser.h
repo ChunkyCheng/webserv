@@ -6,6 +6,7 @@
 # include <deque>
 # include <vector>
 # include <map>
+# include <stdexcept>
 
 # define HTTP		0b001
 # define SERVER		0b010
@@ -20,6 +21,13 @@ struct s_token
 	e_token_type	type;
 	int				line_num;
 };
+
+struct s_ConfigInfo
+{
+	std::deque<s_token>	tokens;
+	std::string			path;
+	int					lines;
+}
 
 struct s_directive_rules
 {

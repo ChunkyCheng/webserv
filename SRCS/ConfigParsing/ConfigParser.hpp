@@ -29,8 +29,7 @@ class	ConfigParser
 		bool	parseTokens(void);
 
 	private:
-		std::string					_config_path;
-		std::deque<s_token>			_tokens;
+		s_ConfigInfo				_configInfo;
 		std::vector<ADirective*>	_directives;
 		
 		static const std::map<std::string, s_rules>	_directive_rules;

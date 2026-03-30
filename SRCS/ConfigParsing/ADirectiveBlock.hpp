@@ -1,13 +1,13 @@
 #ifndef ADIRECTIVEBLOCK_HPP
 # define ADIRECTIVEBLOCK_HPP
 
+# include "ConfigParser.h"
 # include "ADirective.hpp"
 
 class	ADirectiveBlock	: public ADirective
 {
 	protected:
-		ADirectiveBlock(std::deque<s_token>& tokens, std::string type,
-						const std::string& config_path, s_directive_rules rules,
+		ADirectiveBlock(std::string type, s_directive_rules rules, ConfigParser& info,
 						int block_level);
 		~ADirectiveBlock(void);
 	private:
@@ -16,7 +16,7 @@ class	ADirectiveBlock	: public ADirective
 		ADirectiveBlock&	operator=(const ADirectiveBlock& other);
 
 	public:
-		void	parseSubDirectives(void);
+		void	parseSubDirectives(ConfigParser& info);
 
 	private:
 		std::vector<ADirective*>	_sub_directives;

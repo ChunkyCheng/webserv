@@ -7,7 +7,7 @@
 class	ServerDirective : public ADirectiveBlock
 {
 	public:
-		ServerDirective(std::deque<s_token>& tokens, const std::string& config_path);
+		ServerDirective(ConfigParser& info);
 		~ServerDirective(void);
 	private:
 		ServerDirective(void);

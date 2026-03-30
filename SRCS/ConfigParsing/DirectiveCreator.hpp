@@ -12,11 +12,9 @@ class	DirectiveCreator
 		~DirectiveCreator(void);
 	
 	public:
-		static ADirective*	create(std::deque<s_token>& tokens,
-								   const std::string& config_path,
-								   int block_level);
+		static ADirective*	create(ConfigParser& info, int block_level);
 		
-		typedef ADirective* (*t_creator)(std::deque<s_token>&, const std::string&);
+		typedef ADirective* (*t_creator)(ConfigParser& info);
 		struct s_create_info
 		{
 			unsigned int	block_scope;

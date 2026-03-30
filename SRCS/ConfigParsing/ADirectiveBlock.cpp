@@ -1,21 +1,17 @@
 #include "ADirectiveBlock.hpp"
+#include "ConfigExcept.hpp"
 #include "DirectiveCreator.hpp"
+#include "ConfigParser.hpp"
 
-ADirectiveBlock::ADirectiveBlock(std::deque<s_token>& tokens, std::string type,
-								 const std::string& config_path, s_directive_rules rules,
-								 int block_level)
-	:ADirective(tokens, type, config_path, rules), _block_level(block_level)
+ADirectiveBlock::ADirectiveBlock(std::string type, s_directive_rules rules,
+								 ConfigParser& info, int block_level)
+	:ADirective(type, rules, info),
+	 _block_level(block_level)
 {
-	if (_tokens.size() == 0 || _tokens.front().value != "{")
-	{
-		_valid = false;
-		std::cerr << "Error: directive \"" << _type
-				  << "\" has no opening \"{\" in " << _config_path
-				  << ":" << _argv.back().line_num << std::endl;
-		return ;
-	}
+	if (_tokens.front().type == EOF_TOK || _tokens.front().value != "{")
+		throw (ConfigExcept(ConfigExcept::NO_BLOCKOPEN, _argv[0], _config_path));
 	_tokens.pop_front();
-	parseSubDirectives();
+	parseSubDirectives(info);
 }
 
 ADirectiveBlock::~ADirectiveBlock(void)
@@ -24,24 +20,14 @@ ADirectiveBlock::~ADirectiveBlock(void)
 		delete _sub_directives[i];
 }
 
-void	ADirectiveBlock::parseSubDirectives(void)
+void	ADirectiveBlock::parseSubDirectives(ConfigParser& info)
 {
-	while (_tokens.size() && _tokens.front().value != "}")
+	while (_tokens.front().type != EOF_TOK && _tokens.front().value != "}")
 	{
-		_sub_directives.push_back(
-		DirectiveCreator::create(_tokens, _config_path, _block_level));
-		if (_sub_directives.back() == NULL || !_sub_directives.back()->isValid())
-		{
-			_valid = false;
-			return ;
-		}
+		_sub_directives.push_back(DirectiveCreator::create(info, _block_level));
 	}
-	if (_tokens.size() == 0)
-	{
-		_valid = false;
-		std::cerr << "Error: unexpected end of file, expecting \"}\" in "
-				  << _config_path << std::endl;
-	}
+	if (_tokens.front().type == EOF_TOK)
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, _tokens.front(), _config_path));
 	else
 		_tokens.pop_front();
 }

@@ -1,10 +1,12 @@
 #include "DirectiveCreator.hpp"
+#include "ConfigParser.hpp"
 #include "ADirective.hpp"
+#include "ConfigExcept.hpp"
 #include "ServerDirective.hpp"
 
-static ADirective*	createServer(std::deque<s_token>& tokens, const std::string& config_path)
+static ADirective*	createServer(ConfigParser& info)
 {
-	return (new ServerDirective(tokens, config_path));
+	return (new ServerDirective(info));
 }
 
 std::map<std::string, DirectiveCreator::s_create_info> DirectiveCreator::_create_map(void)
@@ -18,39 +20,21 @@ std::map<std::string, DirectiveCreator::s_create_info> DirectiveCreator::_create
 const std::map<std::string, DirectiveCreator::s_create_info>
 DirectiveCreator::_creator_map = _create_map();
 
-ADirective*	DirectiveCreator::create(std::deque<s_token>& tokens,
-const std::string& config_path, int block_level)
+ADirective*	DirectiveCreator::create(ConfigParser& info, int block_level)
 {
+	std::deque<s_token> tokens = info.getTokens();
+	const std::string&	config_path = info.getConfigPath();
+
 	std::string	type;
-	int			line_num;
 	ADirective*	newDirective;
 
 	if (tokens.front().type != WORD)
-	{
-		std::cerr << "Error: unexpected \"" << tokens.front().value
-				  << "\" in " << config_path
-				  << ":" << tokens.front().line_num << std::endl;
-		return (NULL);
-	}
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_TOK, tokens.front(), config_path));
 	type = tokens.front().value;
-	line_num = tokens.front().line_num;
 	if (!_creator_map.count(type))
-	{
-		std::cerr << "Error: unknown directive \"" << type
-				  << "\" in " << config_path
-				  << ":" << line_num << std::endl;
-		return (NULL);
-	}
+		throw (ConfigExcept(ConfigExcept::UNKNOWN_DIR, tokens.front(), config_path));
 	if (!(_creator_map.at(type).block_scope & block_level))
-	{
-		std::cerr << "naur scope" << std::endl;
-		return (NULL);
-	}
-	newDirective = _creator_map.at(type).creator(tokens, config_path);
-	if (!newDirective->isValid())
-	{
-		delete newDirective;
-		return (NULL);
-	}
+		throw (ConfigExcept(ConfigExcept::SCOPE, tokens.front(), config_path));
+	newDirective = _creator_map.at(type).creator(info);
 	return (newDirective);
 }

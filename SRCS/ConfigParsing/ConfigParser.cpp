@@ -47,6 +47,16 @@ ConfigParser::~ConfigParser(void)
 		delete _directives[i];
 }
 
+std::deque<s_token>&	ConfigParser::getTokens(void)
+{
+	return (_tokens);
+}
+
+const std::string&	ConfigParser::getConfigPath(void) const
+{
+	return (_config_path);
+}
+
 static bool	issymbol(const char c)
 {
 	if (c == '{' || c == '}' || c == ';')
@@ -91,6 +101,7 @@ void	ConfigParser::_tokenize(std::ifstream& infile)
 			}
 		}
 	}
+	_tokens.push_back((s_token){"", EOF_TOK, line_num});
 }
 
 void	ConfigParser::printTokens(void) const
@@ -110,9 +121,9 @@ void	ConfigParser::printTokens(void) const
 
 bool	ConfigParser::parseTokens(void)
 {
-	while (_tokens.size())
+	while (_tokens.front().type != EOF_TOK)
 	{
-		_directives.push_back(DirectiveCreator::create(_tokens, _config_path, HTTP));
+		_directives.push_back(DirectiveCreator::create(*this, HTTP));
 		if (_directives.back() == NULL)
 			return (false);
 	}

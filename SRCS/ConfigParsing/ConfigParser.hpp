@@ -25,11 +25,16 @@ class	ConfigParser
 		ConfigParser&	operator=(const ConfigParser& other);
 
 	public:
+		std::deque<s_token>&	getTokens(void);
+		const std::string&		getConfigPath(void) const;
+
 		void	printTokens(void) const;
 		bool	parseTokens(void);
 
 	private:
-		s_ConfigInfo				_configInfo;
+		const std::string			_config_path;
+		std::deque<s_token>			_tokens;
+		int							_line_num;
 		std::vector<ADirective*>	_directives;
 		
 		static const std::map<std::string, s_rules>	_directive_rules;

@@ -2,9 +2,9 @@ CXX			=	c++
 CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 #-fsanitize=address
 
 PARSE_DIR		=	ConfigParsing
-PARSE_FILES		=	ConfigParser.cpp		ADirective.cpp		ADirectiveBlock.cpp		\
-					ServerDirective.cpp		\
-					Config.cpp	DirectiveCreator.cpp
+PARSE_FILES		=	ConfigParser.cpp		ADirective.cpp			ADirectiveBlock.cpp	\
+					ServerDirective.cpp								\
+					Config.cpp				DirectiveCreator.cpp	ConfigExcept.cpp
 
 SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\

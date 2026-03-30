@@ -12,22 +12,16 @@
 # define SERVER		0b010
 # define LOCATION	0b100
 
+class ConfigParser;
 class ADirective;
 
-enum e_token_type {WORD, SYMBOL};
+enum e_token_type {WORD, SYMBOL, EOF_TOK};
 struct s_token
 {
 	std::string		value;
 	e_token_type	type;
 	int				line_num;
 };
-
-struct s_ConfigInfo
-{
-	std::deque<s_token>	tokens;
-	std::string			path;
-	int					lines;
-}
 
 struct s_directive_rules
 {

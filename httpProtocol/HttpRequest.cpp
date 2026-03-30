@@ -115,24 +115,6 @@ void HttpRequest::parse(const std::string& request_buff)
 	_state = FINISHED;
 }
 
-// NGINX, the state machine
-// State 1: Look for Method. If I see 'G', then 'E', then 'T', then a space, I am now in State 2.
-// State 2: Look for Path. Keep reading until I hit a space.
-// State 3: Look for HTTP Version... and so on.
-
-// Request-Line grammar = METHOD SP URI SP HTTP-VERSION CRLF
-
-// request-line
-//    method = GET
-//    request-target = /index.html
-//    version = HTTP/1.1
-
-// header-field
-//    Host: example.com
-
-// header-field
-//    Connection: close
-
-// (empty line)
-
-// message-body = none
+bool HttpRequest::hasCompleteHeaders() const {
+	return _raw_buffer.find("\r\n\r\n") != std::string::npos;
+}

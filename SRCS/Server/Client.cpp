@@ -1,7 +1,6 @@
 #include "Client.hpp"
 #include "Server.hpp"
 #include "Epoll.hpp"
-#include "../../httpProtocol/HttpRequest.hpp"
 
 Client::Client(int socket_fd, Server& server, Epoll& epoll)
 	:_socket(*this, socket_fd), _server(server), _epoll(epoll),
@@ -20,7 +19,7 @@ ClientSocket& Client::getSocket(void)
 
 void	Client::recvMessage(void)
 {
-	char	raw[1];
+	char	raw[4096];
 	int		len;
 
 	len = recv(_socket.getFd(), raw, sizeof(raw), 0);
@@ -36,8 +35,7 @@ void	Client::recvMessage(void)
 		_request_buff += std::string(raw, len);
 		if (_requestHandler.checkRequestComplete())
 		{
-			_httpRequest.parse(_request_buff);
-			_request_buff.clear(); // IMPORTANT: Now it clears everything, what if there is multiple, must handle later
+			// Once full request (Headers + Body) has been confirmed, only then return true and trigger epoll
 			_epoll.modAddSendEvent(_socket);
 		}
 	}
@@ -57,27 +55,3 @@ void	Client::sendMessage(void)
 	else
 		_response_buff.erase(0, len);
 }
-
-// void Client::sendMessage(void)
-// {
-//     // 1. If we have a huge file, we might need to read more of it into the buffer
-//     if (!_requestHandler.checkResponseComplete() && _response_buff.size() < BUFF_SIZE)
-//     {
-//         _requestHandler.continueBuildResponse(); // Reads more from disk/CGI into _response_buff
-//     }
-
-//     // 2. Send whatever is currently in the buffer
-//     ssize_t sent = send(_socket, _response_buff.c_str(), _response_buff.size(), 0);
-    
-//     if (sent > 0)
-//     {
-//         _response_buff.erase(0, sent); // Remove sent bytes
-//     }
-
-//     // 3. Only stop the write event if building is done AND buffer is empty
-//     if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
-//     {
-//         _epoll.modRemoveSendEvent(_socket);
-//         // If connection: close, close(socket). If keep-alive, mod for EPOLLIN.
-//     }
-// }

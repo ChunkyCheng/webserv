@@ -13,7 +13,12 @@
 
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest() : _state(READING_HEADER) {}
+HttpRequest::HttpRequest()
+	: _status_code(0),
+	_state(READING_HEADER),
+	_content_length(0)
+
+{}
 
 RequestState HttpRequest::getState() const
 {
@@ -39,6 +44,42 @@ std::string HttpRequest::getVersion() const
 std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
 	return (_headers);
+}
+
+bool	HttpRequest::parseHeaders(std::string &req_buff)
+{
+	size_t first_relevant = req_buff.find_first_not_of("\r\n");
+	if (first_relevant == std::string::npos)
+	{
+		req_buff.clear();
+		return (false);
+	}
+	if (first_relevant > 0)
+		req_buff.erase(0, first_relevant);
+	size_t boundary = req_buff.find("\r\n\r\n");
+	if (boundary == std::string::npos)
+		return (false);
+	std::string raw_headers = req_buff.substr(0, boundary);
+	if (!tokenizeAndParse(raw_headers))
+		return (false);
+	req_buff.erase(0, boundary + 4);
+	return (true);
+}
+
+bool	HttpRequest::tokenizeAndParse(std::string& raw_headers)
+{
+	
+	return (true);
+}
+
+bool	HttpRequest::hasBody(void)
+{
+	return (true);
+}
+
+bool	HttpRequest::hasError(void)
+{
+	return (true);
 }
 
 void HttpRequest::parse(const std::string& request_buff)
@@ -115,6 +156,14 @@ void HttpRequest::parse(const std::string& request_buff)
 	_state = FINISHED;
 }
 
-bool HttpRequest::hasCompleteHeaders() const {
-	return _raw_buffer.find("\r\n\r\n") != std::string::npos;
+void	HttpRequest::reset()
+{
+	_method.clear();
+	_path.clear();
+	_version.clear();
+	_headers.clear();
+	_body.clear();
+	_content_length = 0;
+	_error_code = 0;
+	_state = READING_HEADERS;
 }

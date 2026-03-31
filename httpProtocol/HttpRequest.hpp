@@ -34,19 +34,28 @@ enum HttpReqStatus
 class HttpRequest
 {
 	private:
-		HttpReqStatus	_status_code;
+		HttpRequest(const HttpRequest& other);
+		HttpRequest& operator=(const HttpRequest& other);
+
+		// Track state
+		HttpReqStatus		_error_code;
 		httpRequestState	_state;
+
+		// Protocol identifiers
 		std::string		_method; // First line of the request, e.g., "GET", "POST", etc.
 		std::string 	_path; // The path requested, e.g., "/index.html"
 		std::string 	_version; // The HTTP version, e.g., "HTTP/1.1"
+
+		// Metadata
 		std::map<std::string, std::string> _headers; // Key-value pairs of headers, e.g., "Host: example.com"
 		std::string 	_body; // After the empty line \r\n\r\n, whatever is left is the Body.
 		size_t			_content_length;
+		bool			_is_chunked;
 
 	public:
 		HttpRequest();
-		void	parse(const std::string& request_buff);
-		bool	hasCompleteHeaders();
+		bool	parseHeaders(std::string& req_buff);
+		void	reset();
 
 		std::string& 		getMethod() const;
 		std::string& 		getPath() const;

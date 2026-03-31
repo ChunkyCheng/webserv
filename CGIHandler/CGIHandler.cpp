@@ -5,12 +5,12 @@ _interpreterPath(interpreter), _scriptPath(script), _request(request) {}
 
 CGIHandler::~CGIHandler() {}
 
-void CGIHandler::closePipe(int pipe[2]) {
+void CGIHandler::_closePipe(int pipe[2]) {
 	close(pipe[0]);
 	close(pipe[1]);
 }
 
-std::string CGIHandler::readOutput(int fd) {
+std::string CGIHandler::_readOutput(int fd) {
 	ssize_t bytes;
 	char buffer[2048];
 	std::string output;
@@ -21,6 +21,48 @@ std::string CGIHandler::readOutput(int fd) {
 	return (output);
 }
 
+/*
+ * Example CGI output:
+ *
+ * Status: 404 Not Found\r\n
+ * Content-Type: text/html\r\n
+ * \r\n
+ * <h1>Page not found</h1>
+ */
+HttpResponse CGIHandler::_parseCGI(std::string rawOutput) {
+	size_t pos = rawOutput.find("\r\n\r\n");
+	std::string body = rawOutput.substr(pos + 4);
+	std::string headers = rawOutput.substr(0, pos);
+	HttpResponse response;
+
+	size_t lineStart = 0;
+	size_t lineEnd = headers.find("\r\n");
+	std::string line;
+	while (lineStart < headers.size()) {
+		if (lineEnd == std::string::npos) {
+			line = headers.substr(lineStart);
+		} else {
+			line = headers.substr(lineStart, lineEnd - lineStart);
+		}
+		size_t delimiterPos = line.find(": ");
+		std::string key = line.substr(0, delimiterPos);
+		std::string value = line.substr(delimiterPos + 2);
+		if (key == "Status") {
+			response.statusCode = std::atoi(value.c_str());
+		} else {
+			response.headers[key] = value;
+		}
+		if (lineEnd == std::string::npos)
+			break ;
+		lineStart = lineEnd + 2;
+		lineEnd = headers.find("\r\n", lineStart);
+	}
+
+	response.body = body;
+	return (response);
+}
+
+
 HttpResponse CGIHandler::execute() {
 	int stdinPipe[2]; // parent writes, child reads
 	int stdoutPipe[2]; // parent reads, child writes
@@ -29,13 +71,13 @@ HttpResponse CGIHandler::execute() {
 		throw std::runtime_error("pipe() failed");
 	}
 	if (pipe(stdoutPipe) == -1) {
-		closePipe(stdinPipe);
+		_closePipe(stdinPipe);
 		throw std::runtime_error("pipe() failed");
 	}
 	pid_t pid = fork();
 	if (pid == -1) {
-		closePipe(stdinPipe);
-		closePipe(stdoutPipe);
+		_closePipe(stdinPipe);
+		_closePipe(stdoutPipe);
 		throw std::runtime_error("fork() failed");
 	}
 	if (pid == 0) {
@@ -66,11 +108,9 @@ HttpResponse CGIHandler::execute() {
 		}
 	}
 	close(stdinPipe[1]);
-	std::string rawOutput = readOutput(stdoutPipe[0]);
+	std::string rawOutput = _readOutput(stdoutPipe[0]);
 	waitpid(pid, NULL, 0);
 	close(stdoutPipe[0]);
-	HttpResponse response;
-	response.statusCode = 200;
-	response.body = rawOutput;
+	HttpResponse response = _parseCGI(rawOutput);
 	return (response);
 }

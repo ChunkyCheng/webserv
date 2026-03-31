@@ -29,8 +29,9 @@ class CGIHandler
 		HttpRequest _request;
 		
 		// Member Functions
-		void closePipe(int pipe[2]);
-		std::string readOutput(int fd);
+		void _closePipe(int pipe[2]);
+		std::string _readOutput(int fd);
+		HttpResponse _parseCGI(std::string rawOutput);
 
 	public:
 		// Constructor & Destructor

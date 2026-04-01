@@ -17,10 +17,9 @@ ADirectiveBlock::~ADirectiveBlock(void)
 
 void	ADirectiveBlock::consumeSymbolToken(std::deque<s_token>& tokens)
 {
-	std::cout << _tokens.size() << std::endl;
 	if (tokens.front().type == EOF_TOK || tokens.front().value != "{")
 		throw (ConfigExcept(ConfigExcept::NO_BLOCKOPEN, _argv[0], _config_path));
-	_tokens.pop_front();
+	tokens.pop_front();
 }
 
 void	ADirectiveBlock::parse(ConfigParser& info)

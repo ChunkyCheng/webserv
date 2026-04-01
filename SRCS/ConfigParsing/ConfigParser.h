@@ -26,8 +26,8 @@ struct s_token
 struct s_directive_rules
 {
 	int				block_scope;
-	unsigned int	min_args;
-	unsigned int	max_args;
+	unsigned int	min_argc;
+	unsigned int	max_argc;
 	bool			allow_multiple;
 };
 

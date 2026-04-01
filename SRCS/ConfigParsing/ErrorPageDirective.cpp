@@ -30,8 +30,6 @@ void	ErrorPageDirective::parse(ConfigParser& info)
 	std::string	dest;
 
 	(void)info;
-	if (_argv.size() < 3)
-		throw (ConfigExcept(ConfigExcept::WRONG_ARGC, _argv[0], _config_path));
 	dest = _argv[_argv.size() - 1].value;
 	for (unsigned int i = 1; i < _argv.size() - 1; ++i)
 	{

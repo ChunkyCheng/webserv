@@ -37,8 +37,8 @@ DirectiveCreator::_creator_map = _create_map();
 
 ADirective*	DirectiveCreator::create(ConfigParser& info, int block_level)
 {
-	std::deque<s_token> tokens = info.getTokens();
-	const std::string&	config_path = info.getConfigPath();
+	std::deque<s_token>&	tokens = info.getTokens();
+	const std::string&		config_path = info.getConfigPath();
 
 	std::string					type;
 	std::auto_ptr<ADirective>	directive;

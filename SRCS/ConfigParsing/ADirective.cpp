@@ -23,6 +23,8 @@ void	ADirective::init(std::deque<s_token>& tokens, ConfigParser& info)
 		tokens.pop_front();
 	}
 	consumeSymbolToken(tokens);
+	if (_argv.size() < _rules.min_argc || _argv.size() > _rules.max_argc)
+		throw (ConfigExcept(ConfigExcept::WRONG_ARGC, _argv[0], _config_path));
 	parse(info);
 }
 

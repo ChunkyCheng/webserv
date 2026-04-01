@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/29 13:58:24 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/01 16:33:02 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ class HttpRequest
 	public:
 		HttpRequest();
 		bool	parseHeaders(std::string& req_buff);
+		bool	HttpRequest::tokenizeAndParse(std::string& raw_headers);
 		void	reset();
 
 		std::string& 		getMethod() const;

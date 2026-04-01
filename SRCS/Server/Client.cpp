@@ -33,6 +33,7 @@ void	Client::recvMessage(void)
 	else
 	{
 		_request_buff += std::string(raw, len);
+		_requestHandler.processData();
 		if (_requestHandler.checkRequestComplete())
 		{
 			// Once full request (Headers + Body) has been confirmed, only then return true and trigger epoll

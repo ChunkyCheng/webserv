@@ -66,5 +66,4 @@ void	RequestHandler::processData(void)
 				break;
 		}
 	}
-	//incomplete
 }

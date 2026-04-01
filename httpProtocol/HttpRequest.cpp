@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/03/29 14:01:25 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/01 17:49:08 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,9 @@
 #include "HttpRequest.hpp"
 
 HttpRequest::HttpRequest()
-	: _status_code(0),
+	: _error_code(0),
 	_state(READING_HEADER),
 	_content_length(0)
-
 {}
 
 RequestState HttpRequest::getState() const
@@ -59,7 +58,7 @@ bool	HttpRequest::parseHeaders(std::string &req_buff)
 	size_t boundary = req_buff.find("\r\n\r\n");
 	if (boundary == std::string::npos)
 		return (false);
-	std::string raw_headers = req_buff.substr(0, boundary);
+	std::string raw_headers = req_buff.substr(0, boundary + 4);
 	if (!tokenizeAndParse(raw_headers))
 		return (false);
 	req_buff.erase(0, boundary + 4);
@@ -68,7 +67,25 @@ bool	HttpRequest::parseHeaders(std::string &req_buff)
 
 bool	HttpRequest::tokenizeAndParse(std::string& raw_headers)
 {
-	
+	size_t		pos = 0;
+	size_t		end = 0;
+	bool		is_first_line = true;
+	std::string	line;
+
+	while ((end = raw_headers.find("\r\n") != std::string::npos))
+	{
+		line = raw_headers.substr(pos, end - pos);
+		if (is_first_line)
+		{
+			if (!parseRequestLine(line))
+				return (false);
+			is_first_line = false;
+		}
+		else if (!line.empty())
+		{
+			
+		}
+	}
 	return (true);
 }
 
@@ -165,5 +182,5 @@ void	HttpRequest::reset()
 	_body.clear();
 	_content_length = 0;
 	_error_code = 0;
-	_state = READING_HEADERS;
+	_state = READING_HEADER;
 }

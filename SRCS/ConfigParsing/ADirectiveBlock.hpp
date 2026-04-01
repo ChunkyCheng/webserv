@@ -15,12 +15,16 @@ class	ADirectiveBlock	: public ADirective
 		ADirectiveBlock(const ADirectiveBlock& other);
 		ADirectiveBlock&	operator=(const ADirectiveBlock& other);
 
-	public:
-		void	parseSubDirectives(ConfigParser& info);
+	protected:
+		void	consumeSymbolToken(std::deque<s_token>& tokens);
+		void	parse(ConfigParser& info);
 
 	private:
-		std::vector<ADirective*>	_sub_directives;
+		std::vector<ADirective*>	_subdirectives;
 		int							_block_level;
+
+		void	_parseSubDirectives(ConfigParser& info);
+		void	_freeSubDirectives(void);
 };
 
 #endif

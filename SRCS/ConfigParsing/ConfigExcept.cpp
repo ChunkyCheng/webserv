@@ -17,11 +17,20 @@ ConfigExcept::ConfigExcept(e_ecode ecode, s_token token, std::string config_path
 		case UNKNOWN_DIR:
 			ss << "unknown directive \"" << token.value << "\"";
 			break ;
-		case SCOPE:
+		case WRONG_SCOPE:
 			ss << "\"" << token.value << "\" directive is not allowed here";
 			break ;
 		case NO_BLOCKOPEN:
 			ss << "directive \"" << token.value << "\" has no opening \"{\"";
+			break ;
+		case WRONG_ARGC:
+			ss << "invalid number of arguments in \"" << token.value << "\" directive";
+			break ;
+		case INVALID_VAL:
+			ss << "invalid value \"" << token.value << "\"";
+			break ;
+		case ECODE_RANGE:
+			ss << "value \"" << token.value << "\" must be between 300 and 599";
 			break ;
 		default:
 			break ;

@@ -8,26 +8,40 @@ ADirectiveBlock::ADirectiveBlock(std::string type, s_directive_rules rules,
 	:ADirective(type, rules, info),
 	 _block_level(block_level)
 {
-	if (_tokens.front().type == EOF_TOK || _tokens.front().value != "{")
-		throw (ConfigExcept(ConfigExcept::NO_BLOCKOPEN, _argv[0], _config_path));
-	_tokens.pop_front();
-	parseSubDirectives(info);
 }
 
 ADirectiveBlock::~ADirectiveBlock(void)
 {
-	for (unsigned int i = 0; i < _sub_directives.size(); ++i)
-		delete _sub_directives[i];
+	_freeSubDirectives();
 }
 
-void	ADirectiveBlock::parseSubDirectives(ConfigParser& info)
+void	ADirectiveBlock::consumeSymbolToken(std::deque<s_token>& tokens)
+{
+	std::cout << _tokens.size() << std::endl;
+	if (tokens.front().type == EOF_TOK || tokens.front().value != "{")
+		throw (ConfigExcept(ConfigExcept::NO_BLOCKOPEN, _argv[0], _config_path));
+	_tokens.pop_front();
+}
+
+void	ADirectiveBlock::parse(ConfigParser& info)
+{
+	_parseSubDirectives(info);
+}
+
+void	ADirectiveBlock::_parseSubDirectives(ConfigParser& info)
 {
 	while (_tokens.front().type != EOF_TOK && _tokens.front().value != "}")
-	{
-		_sub_directives.push_back(DirectiveCreator::create(info, _block_level));
-	}
+		_subdirectives.push_back(DirectiveCreator::create(info, _block_level));
 	if (_tokens.front().type == EOF_TOK)
 		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, _tokens.front(), _config_path));
 	else
 		_tokens.pop_front();
 }
+
+void	ADirectiveBlock::_freeSubDirectives(void)
+{
+	for (unsigned int i = 0; i < _subdirectives.size(); ++i)
+		delete _subdirectives[i];
+}
+
+

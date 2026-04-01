@@ -12,8 +12,11 @@ class	ConfigExcept : public std::exception
 			UNEXPECTED_TOK,
 			UNEXPECTED_EOF,
 			UNKNOWN_DIR,
-			SCOPE,
-			NO_BLOCKOPEN
+			WRONG_SCOPE,
+			NO_BLOCKOPEN,
+			WRONG_ARGC,
+			INVALID_VAL,
+			ECODE_RANGE
 		};
 		ConfigExcept(e_ecode ecode, s_token token, std::string config_path);
 		~ConfigExcept(void) throw();

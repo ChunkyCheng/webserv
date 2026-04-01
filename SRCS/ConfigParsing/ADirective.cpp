@@ -1,5 +1,6 @@
 #include "ADirective.hpp"
 #include "ConfigParser.hpp"
+#include "ConfigExcept.hpp"
 #include <iostream>
 
 ADirective::ADirective(std::string type, s_directive_rules rules, ConfigParser& info) 
@@ -8,27 +9,33 @@ ADirective::ADirective(std::string type, s_directive_rules rules, ConfigParser& 
 	 _tokens(info.getTokens()),
 	 _config_path(info.getConfigPath())
 {
-	while (_tokens.front().type != EOF_TOK && _tokens.front().type != SYMBOL)
-	{
-		_argv.push_back(_tokens.front());
-		_tokens.pop_front();
-	}
 }
 
 ADirective::~ADirective(void)
 {
 }
 
-void	ADirective::perrorInvalidArgC(void) const
+void	ADirective::init(std::deque<s_token>& tokens, ConfigParser& info)
 {
-	std::cerr << "Error: invalid number of arguments in \""
-			  << _type << "\" directive in "
-			  << _config_path << ":" << _tokens[0].line_num << std::endl;
+	while (tokens.front().type != EOF_TOK && tokens.front().type != SYMBOL)
+	{
+		_argv.push_back(tokens.front());
+		tokens.pop_front();
+	}
+	consumeSymbolToken(tokens);
+	parse(info);
 }
 
-void	ADirective::perrorDuplicate(void) const
+void	ADirective::consumeSymbolToken(std::deque<s_token>& tokens)
 {
-	std::cerr << "Error: \""
-			  << _type << "\" directive is duplicate in "
-			  << _config_path << ":" << _tokens[0].line_num << std::endl;
+	if (tokens.front().type == EOF_TOK)
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, tokens.front(), _config_path));
+	if (tokens.front().value != ";")
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_TOK, tokens.front(), _config_path));
+	tokens.pop_front();
+}
+
+void	ADirective::parse(ConfigParser& info)
+{
+	(void)info;
 }

@@ -22,6 +22,7 @@ struct s_token
 	e_token_type	type;
 	int				line_num;
 };
+typedef std::deque<s_token>	t_tokens;
 
 struct s_directive_rules
 {

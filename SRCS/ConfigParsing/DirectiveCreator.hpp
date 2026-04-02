@@ -12,14 +12,13 @@ class	DirectiveCreator
 		~DirectiveCreator(void);
 	
 	public:
-		static ADirective*	create(ConfigParser& info, int block_level);
+		static ADirective*	create(t_tokens& tokens, const std::string& config_path,
+								   int block_level);
 		
-		typedef ADirective* (*t_creator)(ConfigParser& info);
+		typedef ADirective* (*t_creator)(void);
 		struct s_create_info
 		{
 			unsigned int	block_scope;
-			unsigned int	min_argc;
-			unsigned int	max_argc;
 			t_creator		creator;
 		};
 	

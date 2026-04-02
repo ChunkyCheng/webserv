@@ -7,8 +7,7 @@
 class	ADirectiveBlock	: public ADirective
 {
 	protected:
-		ADirectiveBlock(std::string type, s_directive_rules rules, ConfigParser& info,
-						int block_level);
+		ADirectiveBlock(std::string type, s_directive_rules rules, int block_level);
 		~ADirectiveBlock(void);
 	private:
 		ADirectiveBlock(void);
@@ -16,15 +15,14 @@ class	ADirectiveBlock	: public ADirective
 		ADirectiveBlock&	operator=(const ADirectiveBlock& other);
 
 	protected:
-		void	consumeSymbolToken(std::deque<s_token>& tokens);
-		void	parse(ConfigParser& info);
+		void	consumeSymbolToken(t_tokens& tokens, const std::string& config_path);
+		void	parse(t_tokens& tokens, const std::string& config_path);
 
 	private:
 		std::vector<ADirective*>	_subdirectives;
 		int							_block_level;
 
-		void	_parseSubDirectives(ConfigParser& info);
-		void	_freeSubDirectives(void);
+		void	_parseSubDirectives(t_tokens& tokens, const std::string& config_path);
 };
 
 #endif

@@ -7,15 +7,14 @@
 class	ErrorPageDirective : public ADirective
 {
 	public:
-		ErrorPageDirective(ConfigParser& info);
+		ErrorPageDirective(void);
 		~ErrorPageDirective(void);
 	private:
-		ErrorPageDirective(void);
 		ErrorPageDirective(const ErrorPageDirective& other);
 		ErrorPageDirective&	operator=(const ErrorPageDirective& other);
 
 	public:
-		void	parse(ConfigParser& info);
+		void	parse(t_tokens& tokens, const std::string& config_path);
 
 	private:
 		std::map<int, std::string>	_code_destinations;

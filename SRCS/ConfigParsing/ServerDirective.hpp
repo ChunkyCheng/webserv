@@ -7,10 +7,9 @@
 class	ServerDirective : public ADirectiveBlock
 {
 	public:
-		ServerDirective(ConfigParser& info);
+		ServerDirective(void);
 		~ServerDirective(void);
 	private:
-		ServerDirective(void);
 		ServerDirective(const ServerDirective& other);
 		ServerDirective&	operator=(const ServerDirective& other);
 

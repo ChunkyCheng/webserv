@@ -6,7 +6,7 @@
 class	ADirective
 {
 	protected:
-		ADirective(std::string type, s_directive_rules rules, ConfigParser& info);
+		ADirective(std::string type, s_directive_rules rules);
 	public:
 		virtual ~ADirective(void);
 	private:
@@ -15,17 +15,16 @@ class	ADirective
 		ADirective&	operator=(const ADirective& other);
 
 	public:
-		void	init(std::deque<s_token>& tokens, ConfigParser& info);	
+		void	init(t_tokens& tokens, const std::string& config_path);
 
 	protected:
 		const std::string		_type;
 		const s_directive_rules	_rules;
-		std::deque<s_token>&	_tokens;
-		const std::string&		_config_path;
 		std::vector<s_token>	_argv;
 
-		virtual void	consumeSymbolToken(std::deque<s_token>& tokens);
-		virtual void	parse(ConfigParser& info);
+		virtual void	consumeSymbolToken(t_tokens& tokens,
+										   const std::string& config_path);
+		virtual void	parse(t_tokens& tokens, const std::string& config_path);
 
 	private:
 };

@@ -7,10 +7,9 @@
 class	LocationDirective : public ADirectiveBlock
 {
 	public:
-		LocationDirective(ConfigParser& info);
+		LocationDirective(void);
 		~LocationDirective(void);
 	private:
-		LocationDirective(void);
 		LocationDirective(const LocationDirective& other);
 		LocationDirective&	operator=(const LocationDirective& other);
 

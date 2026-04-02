@@ -4,9 +4,9 @@
 #include <cerrno>
 #include "ConfigExcept.hpp"
 
-ErrorPageDirective::ErrorPageDirective(ConfigParser& info)
+ErrorPageDirective::ErrorPageDirective(void)
 	:ADirective("error_page",
-	(s_directive_rules){HTTP | SERVER | LOCATION, 3, INT_MAX, true}, info)
+	(s_directive_rules){HTTP | SERVER | LOCATION, 3, INT_MAX, true})
 {
 }
 
@@ -24,22 +24,20 @@ static bool	strisdigit(std::string& str)
 	return (true);
 }
 
-void	ErrorPageDirective::parse(ConfigParser& info)
+void	ErrorPageDirective::parse(t_tokens& tokens, const std::string& config_path)
 {
 	long		errorcode;
 	std::string	dest;
 
-	(void)info;
+	(void)tokens;
 	dest = _argv[_argv.size() - 1].value;
 	for (unsigned int i = 1; i < _argv.size() - 1; ++i)
 	{
 		if (!strisdigit(_argv[i].value))
-			throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[i], _config_path));
+			throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[i], config_path));
 		errorcode = std::strtol(_argv[i].value.c_str(), NULL, 10);
 		if (errorcode < 300 || errorcode > 599 || errno == ERANGE)
-			throw (ConfigExcept(ConfigExcept::ECODE_RANGE, _argv[i], _config_path));
+			throw (ConfigExcept(ConfigExcept::ECODE_RANGE, _argv[i], config_path));
 		_code_destinations[errorcode] = dest;
 	}
 }
-		
-

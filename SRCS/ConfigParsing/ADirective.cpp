@@ -3,11 +3,8 @@
 #include "ConfigExcept.hpp"
 #include <iostream>
 
-ADirective::ADirective(std::string type, s_directive_rules rules, ConfigParser& info) 
-	:_type(type),
-	 _rules(rules),
-	 _tokens(info.getTokens()),
-	 _config_path(info.getConfigPath())
+ADirective::ADirective(std::string type, s_directive_rules rules) 
+	:_type(type), _rules(rules)
 {
 }
 
@@ -15,29 +12,30 @@ ADirective::~ADirective(void)
 {
 }
 
-void	ADirective::init(std::deque<s_token>& tokens, ConfigParser& info)
+void	ADirective::init(t_tokens& tokens, const std::string& config_path)
 {
 	while (tokens.front().type != EOF_TOK && tokens.front().type != SYMBOL)
 	{
 		_argv.push_back(tokens.front());
 		tokens.pop_front();
 	}
-	consumeSymbolToken(tokens);
+	consumeSymbolToken(tokens, config_path);
 	if (_argv.size() < _rules.min_argc || _argv.size() > _rules.max_argc)
-		throw (ConfigExcept(ConfigExcept::WRONG_ARGC, _argv[0], _config_path));
-	parse(info);
+		throw (ConfigExcept(ConfigExcept::WRONG_ARGC, _argv[0], config_path));
+	parse(tokens, config_path);
 }
 
-void	ADirective::consumeSymbolToken(std::deque<s_token>& tokens)
+void	ADirective::consumeSymbolToken(t_tokens& tokens, const std::string& config_path)
 {
 	if (tokens.front().type == EOF_TOK)
-		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, tokens.front(), _config_path));
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, tokens.front(), config_path));
 	if (tokens.front().value != ";")
-		throw (ConfigExcept(ConfigExcept::UNEXPECTED_TOK, tokens.front(), _config_path));
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_TOK, tokens.front(), config_path));
 	tokens.pop_front();
 }
 
-void	ADirective::parse(ConfigParser& info)
+void	ADirective::parse(t_tokens& tokens, const std::string& config_path)
 {
-	(void)info;
+	(void)tokens;
+	(void)config_path;
 }

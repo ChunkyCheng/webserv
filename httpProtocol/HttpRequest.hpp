@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/01 16:33:02 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/02 20:03:02 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,12 +23,15 @@ enum httpRequestState
 	ERROR
 };
 
-enum HttpReqStatus
+enum HttpErrStatus
 {
+	NONE = 0,
 	OK = 200,
 	BAD_REQUEST = 400,
 	NOT_FOUND = 404,
-	INTERNAL_SERVER_ERROR = 500
+	INTERNAL_SERVER_ERROR = 500,
+	NOT_IMPLEMENTED = 501,
+	HTTP_VERSION_NOT_SUPPORTED = 505
 };
 
 class HttpRequest
@@ -38,7 +41,7 @@ class HttpRequest
 		HttpRequest& operator=(const HttpRequest& other);
 
 		// Track state
-		HttpReqStatus		_error_code;
+		HttpErrStatus		_error_code;
 		httpRequestState	_state;
 
 		// Protocol identifiers
@@ -55,13 +58,18 @@ class HttpRequest
 	public:
 		HttpRequest();
 		bool	parseHeaders(std::string& req_buff);
-		bool	HttpRequest::tokenizeAndParse(std::string& raw_headers);
+		bool	tokenizeAndParse(std::string& raw_headers);
+		bool	parseRequestLine(std::string& line);
+		bool	parseHeaderLine(const std::string& line);
+
 		void	reset();
 
-		std::string& 		getMethod() const;
-		std::string& 		getPath() const;
-		std::string& 		getVersion() const;
-		httpRequestState& 	getState() const;
+		bool	hasError(void);
+
+		const std::string& 		getMethod() const;
+		const std::string& 		getPath() const;
+		const std::string& 		getVersion() const;
+		httpRequestState 		getState() const;
 		std::map<std::string, std::string> getHeaders() const;
 		size_t				getContentLength() const;
 };

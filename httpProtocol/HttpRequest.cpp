@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/03 15:52:33 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/03 19:29:29 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,15 +15,10 @@
 
 HttpRequest::HttpRequest()
 	: _error_code(NONE),
-	_state(READING_HEADER),
 	_content_length(0),
 	_is_chunked(false)
 {}
 
-httpRequestState HttpRequest::getState() const
-{
-	return (_state);
-}
 
 const std::string& HttpRequest::getMethod() const
 {
@@ -62,6 +57,8 @@ bool	HttpRequest::parseHeaders(std::string &req_buff)
 	if (!tokenizeAndParse(raw_headers))
 		return (false);
 	req_buff.erase(0, boundary + 4);
+	if (!setupBodyType())
+		return (false);
 	return (true);
 }
 
@@ -181,7 +178,17 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 	return (true);
 }
 
-bool	HttpRequest::hasBody(void)
+bool	parseBody(std::string& req_buff)
+{
+	if (!parseContentLength())
+		return (false);
+	if (!parseTransferEncoding())
+		return (false);
+}
+
+
+
+bool	HttpRequest::hasBody()
 {
 	if (_headers.find("content-length") != _headers.end())
 		return (true);
@@ -190,13 +197,27 @@ bool	HttpRequest::hasBody(void)
 	return (false);
 }
 
-bool	HttpRequest::hasError(void)
+bool	HttpRequest::hasError()
 {
 	if (_error_code != NONE)
 		return (true);
 	else
 		return (false);
 }
+
+HttpErrStatus	HttpRequest::getError() const
+{
+	return (_error_code);
+}
+
+bool	HttpRequest::setupBodyType()
+{
+	if (_headers.find("transfer-encoding") != _headers.end())
+	{
+		if (_he)
+	}
+}
+
 
 void	HttpRequest::reset()
 {
@@ -207,5 +228,4 @@ void	HttpRequest::reset()
 	_body.clear();
 	_content_length = 0;
 	_error_code = NONE;
-	_state = READING_HEADER;
 }

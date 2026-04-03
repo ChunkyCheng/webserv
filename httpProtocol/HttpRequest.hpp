@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/03 15:40:53 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/03 19:17:51 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,18 +15,9 @@
 #include <sstream>
 #include <map>
 
-enum httpRequestState
-{
-	READING_HEADER,
-	READING_BODY,
-	FINISHED,
-	ERROR
-};
-
 enum HttpErrStatus
 {
 	NONE = 0,
-	OK = 200,
 	BAD_REQUEST = 400,
 	NOT_FOUND = 404,
 	INTERNAL_SERVER_ERROR = 500,
@@ -42,7 +33,6 @@ class HttpRequest
 
 		// Track state
 		HttpErrStatus		_error_code;
-		httpRequestState	_state;
 
 		// Protocol identifiers
 		std::string		_method; // First line of the request, e.g., "GET", "POST", etc.
@@ -63,15 +53,17 @@ class HttpRequest
 		bool	tokenizeAndParse(std::string& raw_headers);
 		bool	parseRequestLine(std::string& line);
 		bool	parseHeaderLine(const std::string& line);
+		bool	setupBodyType();
+		bool	parseBody(std::string& req_buff);
 		void	reset();
 
-		bool	hasError(void);
-		bool	hasBody(void);
+		bool	hasError();
+		bool	hasBody();
 
-		const std::string& 		getMethod() const;
-		const std::string& 		getPath() const;
-		const std::string& 		getVersion() const;
-		httpRequestState 		getState() const;
-		std::map<std::string, std::string> getHeaders() const;
-		size_t				getContentLength() const;
+		HttpErrStatus						getError() const;
+		const std::string& 					getMethod() const;
+		const std::string& 					getPath() const;
+		const std::string& 					getVersion() const;
+		std::map<std::string, std::string> 	getHeaders() const;
+		size_t								getContentLength() const;
 };

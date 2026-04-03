@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/02 20:32:35 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/03 15:52:33 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,22 +25,21 @@ httpRequestState HttpRequest::getState() const
 	return (_state);
 }
 
-
 const std::string& HttpRequest::getMethod() const
 {
 	return (_method);
 }
 		
-std::string HttpRequest::getPath() const
+const std::string& HttpRequest::getPath() const
 {
 	return (_path);
 }
 		
-std::string HttpRequest::getVersion() const
+const std::string& HttpRequest::getVersion() const
 {
 	return (_version);
 }
-		
+
 std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
 	return (_headers);
@@ -84,7 +83,8 @@ bool	HttpRequest::tokenizeAndParse(std::string& raw_headers)
 		}
 		else if (!line.empty())
 		{
-			parseHeaderLine(line);
+			if (!parseHeaderLine(line))
+				return (false);
 			if (line[0] == ' ' || line[0] == '\t')
 			{
 				_error_code = BAD_REQUEST;
@@ -165,12 +165,29 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 		}
 		key[i] = std::tolower(key[i]);
 	}
-	
+	if (_headers.find(key) != _headers.end())
+	{
+		if (key == "host")
+		{
+			_error_code = BAD_REQUEST;
+			return (false);
+		}
+		_headers[key] += ", " + value;
+	}
+	else
+	{
+		_headers[key] = value;
+	}
+	return (true);
 }
 
 bool	HttpRequest::hasBody(void)
 {
-	return (true);
+	if (_headers.find("content-length") != _headers.end())
+		return (true);
+	if (_headers.find("transfer-encoding") != _headers.end())
+		return (true);
+	return (false);
 }
 
 bool	HttpRequest::hasError(void)

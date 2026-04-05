@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/03 19:17:51 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/05 15:36:37 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ class HttpRequest
 		bool	parseHeaderLine(const std::string& line);
 		bool	setupBodyType();
 		bool	parseBody(std::string& req_buff);
+		bool	parseContentLength();
 		void	reset();
 
 		bool	hasError();

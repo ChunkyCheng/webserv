@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/03 19:29:29 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/05 18:34:06 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,17 +19,18 @@ HttpRequest::HttpRequest()
 	_is_chunked(false)
 {}
 
+HttpRequest::~HttpRequest() {}
 
 const std::string& HttpRequest::getMethod() const
 {
 	return (_method);
 }
-		
+
 const std::string& HttpRequest::getPath() const
 {
 	return (_path);
 }
-		
+
 const std::string& HttpRequest::getVersion() const
 {
 	return (_version);
@@ -172,18 +173,16 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 		_headers[key] += ", " + value;
 	}
 	else
-	{
 		_headers[key] = value;
-	}
 	return (true);
 }
 
-bool	parseBody(std::string& req_buff)
+bool	HttpRequest::parseBody(std::string& req_buff)
 {
-	if (!parseContentLength())
-		return (false);
-	if (!parseTransferEncoding())
-		return (false);
+	for (size_t i = 0; i <= _content_length; i++)
+	{
+		 
+	}
 }
 
 
@@ -212,12 +211,45 @@ HttpErrStatus	HttpRequest::getError() const
 
 bool	HttpRequest::setupBodyType()
 {
-	if (_headers.find("transfer-encoding") != _headers.end())
+	// Transfer Encoding and Content length cannot exist at the same time
+	bool	has_te = (_headers.find("transfer-encoding") != _headers.end());
+	bool	has_cl = (_headers.find("content-length") != _headers.end());
+
+	if (has_te && has_cl)
 	{
-		if (_he)
+		_error_code = BAD_REQUEST;
+		return (false);
 	}
+	if (has_te)
+	{
+		if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
+		{
+			_is_chunked = true;
+			return (true);
+		}
+		_error_code = NOT_IMPLEMENTED;
+		return (false);
+	}
+	if (has_cl)
+		return (parseContentLength());
+	return (true);
 }
 
+bool	HttpRequest::parseContentLength()
+{
+	std::string	value = _headers["content-length"];
+	std::stringstream ss(value);
+	long temp;
+
+	ss >> temp;
+	if (ss.fail() || !ss.eof() || temp < 0)
+	{
+		_error_code = BAD_REQUEST;
+		return (false);
+	}
+	_content_length = static_cast<size_t>(temp);
+	return (true);
+}
 
 void	HttpRequest::reset()
 {

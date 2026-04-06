@@ -32,6 +32,7 @@ bool	RequestHandler::checkResponseComplete(void) const
 void	RequestHandler::processData(void)
 {
 	bool	keep_processing;
+
 	keep_processing = true;
 	while (keep_processing)
 	{

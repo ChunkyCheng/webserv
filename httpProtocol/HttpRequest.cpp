@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/01 17:49:08 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/05 18:34:06 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,32 +14,28 @@
 #include "HttpRequest.hpp"
 
 HttpRequest::HttpRequest()
-	: _error_code(0),
-	_state(READING_HEADER),
-	_content_length(0)
+	: _error_code(NONE),
+	_content_length(0),
+	_is_chunked(false)
 {}
 
-RequestState HttpRequest::getState() const
-{
-	return (_state);
-}
+HttpRequest::~HttpRequest() {}
 
-
-std::string HttpRequest::getMethod() const
+const std::string& HttpRequest::getMethod() const
 {
 	return (_method);
 }
-		
-std::string HttpRequest::getPath() const
+
+const std::string& HttpRequest::getPath() const
 {
 	return (_path);
 }
-		
-std::string HttpRequest::getVersion() const
+
+const std::string& HttpRequest::getVersion() const
 {
 	return (_version);
 }
-		
+
 std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
 	return (_headers);
@@ -62,6 +58,8 @@ bool	HttpRequest::parseHeaders(std::string &req_buff)
 	if (!tokenizeAndParse(raw_headers))
 		return (false);
 	req_buff.erase(0, boundary + 4);
+	if (!setupBodyType())
+		return (false);
 	return (true);
 }
 
@@ -72,7 +70,7 @@ bool	HttpRequest::tokenizeAndParse(std::string& raw_headers)
 	bool		is_first_line = true;
 	std::string	line;
 
-	while ((end = raw_headers.find("\r\n") != std::string::npos))
+	while ((end = raw_headers.find("\r\n", pos)) != std::string::npos)
 	{
 		line = raw_headers.substr(pos, end - pos);
 		if (is_first_line)
@@ -83,94 +81,174 @@ bool	HttpRequest::tokenizeAndParse(std::string& raw_headers)
 		}
 		else if (!line.empty())
 		{
-			
+			if (!parseHeaderLine(line))
+				return (false);
+			if (line[0] == ' ' || line[0] == '\t')
+			{
+				_error_code = BAD_REQUEST;
+				return (false);
+			}
 		}
+		pos = end + 2;
 	}
 	return (true);
 }
 
-bool	HttpRequest::hasBody(void)
+// RFC rules: Exactly two spaces, no spaces in the target, case sensitive, No leading/trailing whitespace
+bool	HttpRequest::parseRequestLine(std::string& line)
 {
-	return (true);
-}
+	size_t	sp1;
+	size_t	sp2;
 
-bool	HttpRequest::hasError(void)
-{
-	return (true);
-}
-
-void HttpRequest::parse(const std::string& request_buff)
-{
-	std::stringstream	ss(request_buff);
-	std::string			line, extra;
-
-	// getline(stream, str, delim); input stream from where characters are read
-	// str where the input is stored after being read from the stream
-	// delim is optional, default is '\n'
-	// --- Parse request line ---
-	std::getline(ss, line);
-	if (line.empty() || line[line.size() - 1] != '\r')
+	if (line.empty() || line[0] == ' ' || line[0] == '\t')
 	{
-		std::cout << "400 Bad Request: Missing CR\n"; // User sent gibberish
-		return ;
+		_error_code = BAD_REQUEST;
+		return (false);
 	}
-	else if (!line.empty() && line[line.size() - 1] == '\r')
+	sp1 = line.find(' ');
+	if (sp1 == std::string::npos)
 	{
-		line.erase(line.size() - 1);
+		_error_code = BAD_REQUEST;
+		return (false);
 	}
-	std::stringstream requestLine(line);
-	if (!(requestLine >> _method >> _path >> _version))
+	sp2 = line.find(' ', sp1 + 1);
+	if (sp2 == std::string::npos)
 	{
-		std::cout << "400 Bad Request: Invalid Request Line\n"; // Failed, didn't have three parts, return error code 400
-		return ;
+		_error_code = BAD_REQUEST;
+		return (false);
 	}
-	if (requestLine >> extra)
+	_method = line.substr(0, sp1);
+	_path = line.substr(sp1 + 1, sp2 - sp1 - 1);
+	_version = line.substr(sp2 + 1);
+	// Need to see if any whitespace in path, not implemented yet
+	if (_method.empty() || _path.empty() || _version.empty())
 	{
-		std::cout << "400 Bad Request: Extra parts\n";
-		return ;
+		_error_code = BAD_REQUEST;
+		return (false);
 	}
 	if (_method != "GET" && _method != "POST" && _method != "DELETE")
 	{
-		std::cout << "405 Method Not Allowed\n"; //Tried to POST to a file that only allows GET
-		return ;
+		_error_code = NOT_IMPLEMENTED;
+		return (false);
 	}
-	if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
+	if (_version != "HTTP/1.1")
 	{
-		std::cout << "505 HTTP Version Not Supported\n";
-		return ;
+		_error_code = HTTP_VERSION_NOT_SUPPORTED;
+		return (false);
 	}
-	std::cout << _method << "\n" << _path << "\n" << _version << "\n"; // debug
+	return (true);
+}
 
-	// --- Parse headers ---
-	while (std::getline(ss, line) && line != "\r")
+bool HttpRequest::parseHeaderLine(const std::string& line)
+{
+	size_t colon = line.find(':');
+	if (colon == std::string::npos || colon == 0)
 	{
-		if (line.empty() || line[line.size() - 1] != '\r')
+		_error_code = BAD_REQUEST;
+		return (false);
+	}
+	if (line[colon - 1] == ' ' || line[colon - 1] == '\t')
+	{
+		_error_code = BAD_REQUEST;
+		return (false);
+	}
+	std::string key = line.substr(0, colon);
+	std::string value = line.substr(colon + 1);
+	for (size_t i = 0; i < key.length(); ++i)
+	{
+		if (key[i] <= 32 || key[i] == 127)
 		{
-			std::cout << "400 Bad Request: Missing CR\n";
-			return ;
+			_error_code = BAD_REQUEST;
+			return (false);
 		}
-		else if (!line.empty() && line[line.size() - 1] == '\r')
+		key[i] = std::tolower(key[i]);
+	}
+	if (_headers.find(key) != _headers.end())
+	{
+		if (key == "host")
 		{
-			line.erase(line.size() - 1);
+			_error_code = BAD_REQUEST;
+			return (false);
 		}
-		size_t colon = line.find(':');
-		if (colon == std::string::npos)
-		{
-			std::cout << "400 Bad Request: Invalid Header\n";
-			return ;
-		}
-		std::string key = line.substr(0, colon);
-		std::cout << key << "\n";
-		std::string value = line.substr(colon + 1);
-		value.erase(0, value.find_first_not_of(" \t")); // Search string from the beginning for the first char that is NOT a space or tab
-		value.erase(value.find_last_not_of(" \t") + 1);
-		std::cout << value << "\n";
+		_headers[key] += ", " + value;
+	}
+	else
 		_headers[key] = value;
-	}
+	return (true);
+}
 
-	std::pair<std::string::iterator, std::string::iterator> range;
-	_body = ss.str().substr(ss.tellg());
-	_state = FINISHED;
+bool	HttpRequest::parseBody(std::string& req_buff)
+{
+	for (size_t i = 0; i <= _content_length; i++)
+	{
+		 
+	}
+}
+
+
+
+bool	HttpRequest::hasBody()
+{
+	if (_headers.find("content-length") != _headers.end())
+		return (true);
+	if (_headers.find("transfer-encoding") != _headers.end())
+		return (true);
+	return (false);
+}
+
+bool	HttpRequest::hasError()
+{
+	if (_error_code != NONE)
+		return (true);
+	else
+		return (false);
+}
+
+HttpErrStatus	HttpRequest::getError() const
+{
+	return (_error_code);
+}
+
+bool	HttpRequest::setupBodyType()
+{
+	// Transfer Encoding and Content length cannot exist at the same time
+	bool	has_te = (_headers.find("transfer-encoding") != _headers.end());
+	bool	has_cl = (_headers.find("content-length") != _headers.end());
+
+	if (has_te && has_cl)
+	{
+		_error_code = BAD_REQUEST;
+		return (false);
+	}
+	if (has_te)
+	{
+		if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
+		{
+			_is_chunked = true;
+			return (true);
+		}
+		_error_code = NOT_IMPLEMENTED;
+		return (false);
+	}
+	if (has_cl)
+		return (parseContentLength());
+	return (true);
+}
+
+bool	HttpRequest::parseContentLength()
+{
+	std::string	value = _headers["content-length"];
+	std::stringstream ss(value);
+	long temp;
+
+	ss >> temp;
+	if (ss.fail() || !ss.eof() || temp < 0)
+	{
+		_error_code = BAD_REQUEST;
+		return (false);
+	}
+	_content_length = static_cast<size_t>(temp);
+	return (true);
 }
 
 void	HttpRequest::reset()
@@ -181,6 +259,5 @@ void	HttpRequest::reset()
 	_headers.clear();
 	_body.clear();
 	_content_length = 0;
-	_error_code = 0;
-	_state = READING_HEADER;
+	_error_code = NONE;
 }

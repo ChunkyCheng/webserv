@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/02 11:00:15 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/06 16:12:02 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,20 +15,14 @@
 #include <sstream>
 #include <map>
 
-enum httpRequestState
+enum HttpErrStatus
 {
-	READING_HEADER,
-	READING_BODY,
-	FINISHED,
-	ERROR
-};
-
-enum HttpReqStatus
-{
-	OK = 200,
+	NONE = 0,
 	BAD_REQUEST = 400,
 	NOT_FOUND = 404,
-	INTERNAL_SERVER_ERROR = 500
+	INTERNAL_SERVER_ERROR = 500,
+	NOT_IMPLEMENTED = 501,
+	HTTP_VERSION_NOT_SUPPORTED = 505
 };
 
 class HttpRequest
@@ -38,8 +32,7 @@ class HttpRequest
 		HttpRequest& operator=(const HttpRequest& other);
 
 		// Track state
-		HttpReqStatus		_error_code;
-		httpRequestState	_state;
+		HttpErrStatus		_error_code;
 
 		// Protocol identifiers
 		std::string		_method; // First line of the request, e.g., "GET", "POST", etc.
@@ -54,14 +47,24 @@ class HttpRequest
 
 	public:
 		HttpRequest();
+		~HttpRequest();
+
 		bool	parseHeaders(std::string& req_buff);
-		bool	HttpRequest::tokenizeAndParse(std::string& raw_headers);
+		bool	tokenizeAndParse(std::string& raw_headers);
+		bool	parseRequestLine(std::string& line);
+		bool	parseHeaderLine(const std::string& line);
+		bool	setupBodyType();
+		bool	parseBody(std::string& req_buff);
+		bool	parseContentLength();
 		void	reset();
 
-		const std::string& 		getMethod() const;
-		const std::string& 		getPath() const;
-		const std::string& 		getVersion() const;
-		httpRequestState 	getState() const;
-		const std::map<std::string, std::string> getHeaders() const;
-		const size_t				getContentLength() const;
+		bool	hasError();
+		bool	hasBody();
+
+		HttpErrStatus						getError() const;
+		const std::string& 					getMethod() const;
+		const std::string& 					getPath() const;
+		const std::string& 					getVersion() const;
+		std::map<std::string, std::string> 	getHeaders() const;
+		size_t								getContentLength() const;
 };

@@ -35,8 +35,7 @@ std::map<std::string, DirectiveCreator::s_create_info> DirectiveCreator::_create
 const std::map<std::string, DirectiveCreator::s_create_info>
 DirectiveCreator::_creator_map = _create_map();
 
-ADirective*	DirectiveCreator::create(t_tokens& tokens, const std::string& config_path
-int block_level)
+ADirective*	DirectiveCreator::create(t_tokens& tokens, const t_str& config_path, int block_level)
 {
 	std::string					type;
 	std::auto_ptr<ADirective>	directive;

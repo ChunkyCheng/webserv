@@ -1,6 +1,6 @@
 #include "LocationDirective.hpp"
 
-LocationDirective::LocationDirective(ConfigParser& info)
+LocationDirective::LocationDirective(void)
 	:ADirectiveBlock("location", (s_directive_rules){SERVER, 2, 2, true}, LOCATION)
 {
 }

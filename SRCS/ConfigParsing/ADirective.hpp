@@ -15,18 +15,15 @@ class	ADirective
 		ADirective&	operator=(const ADirective& other);
 
 	public:
-		void	init(t_tokens& tokens, const std::string& config_path);
+		void	init(t_tokens& tokens, const t_str& config_path);
 
 	protected:
 		const std::string		_type;
 		const s_directive_rules	_rules;
 		std::vector<s_token>	_argv;
 
-		virtual void	consumeSymbolToken(t_tokens& tokens,
-										   const std::string& config_path);
-		virtual void	parse(t_tokens& tokens, const std::string& config_path);
-
-	private:
+		virtual void	consumeSymbolToken(t_tokens& tokens, const t_str& config_path);
+		virtual void	parse(t_tokens& tokens, const t_str& config_path);
 };
 
 #endif

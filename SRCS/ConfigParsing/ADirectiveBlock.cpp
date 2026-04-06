@@ -33,13 +33,13 @@ void	ADirectiveBlock::parse(t_tokens& tokens, const std::string& config_path)
 void	ADirectiveBlock::_parseSubDirectives(t_tokens& tokens,
 const std::string& config_path)
 {
-	while (_tokens.front().type != EOF_TOK && _tokens.front().value != "}")
+	while (tokens.front().type != EOF_TOK && tokens.front().value != "}")
 	{
 		_subdirectives.push_back
 		(DirectiveCreator::create(tokens, config_path,_block_level));
 	}
-	if (_tokens.front().type == EOF_TOK)
-		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, _tokens.front(), _config_path));
+	if (tokens.front().type == EOF_TOK)
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, tokens.front(), config_path));
 	else
-		_tokens.pop_front();
+		tokens.pop_front();
 }

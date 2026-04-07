@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/05 18:34:06 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/05 18:52:42 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,10 +179,8 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 
 bool	HttpRequest::parseBody(std::string& req_buff)
 {
-	for (size_t i = 0; i <= _content_length; i++)
-	{
-		 
-	}
+	size_t bytes_needed = _content_length - _body.size();
+	size_t bytes_to_take = 
 }
 
 

@@ -4,13 +4,21 @@
 #include "socket.h"
 #include "Server.hpp"
 #include "../../httpProtocol/HttpRequest.hpp"
+#include "../../httpProtocol/HttpResponse.hpp"
 
-enum HandlerState
+enum ResponseState
 {
-	STATE_READING_HEADERS,
-	STATE_READING_BODY,
-	STATE_COMPLETE,
-	STATE_ERROR
+	RES_HEADERS,
+	RES_BODY,
+	RES_FINISHED
+};
+
+enum RequestState
+{
+	REQ_READING_HEADERS,
+	REQ_READING_BODY,
+	REQ_COMPLETE,
+	REQ_ERROR
 };
 
 class	RequestHandler
@@ -24,11 +32,12 @@ class	RequestHandler
 		RequestHandler&	operator=(const RequestHandler& other);
 
 	public:
-		HandlerState	getState() const;
+		RequestState	getState() const;
 		bool			checkRequestComplete(void) const;
 		void			continueBuildResponse(void);
 		bool			checkResponseComplete(void) const;
-		void			processData(void);
+		void			processReqData(void);
+		void			buildResponseData(void);
 		void			reset();
 
 	protected:
@@ -37,7 +46,9 @@ class	RequestHandler
 		std::string&	_request_buff;
 		std::string&	_response_buff;
 		HttpRequest		_httpRequest;
-		HandlerState	_state;
+		HttpResponse	_httpResponse;
+		RequestState	_req_state;
+		ResponseState	_res_state;
 };
 
 #endif

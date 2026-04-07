@@ -33,10 +33,10 @@ void	Client::recvMessage(void)
 	else
 	{
 		_request_buff += std::string(raw, len);
-		_requestHandler.processData();
+		_requestHandler.processReqData();
 		if (_requestHandler.checkRequestComplete())
 		{
-			// Once full request (Headers + Body) has been confirmed, only then return true and trigger epoll
+			_requestHandler.buildResponseData();
 			_epoll.modAddSendEvent(_socket);
 		}
 	}
@@ -47,7 +47,7 @@ void	Client::sendMessage(void)
 	int	len;
 
 	if (_response_buff.size() == 0)
-		_requestHandler.continueBuildResponse();	
+		_requestHandler.continueBuildResponse();
 	if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
 		_epoll.modRemoveSendEvent(_socket);
 	len = send(_socket.getFd(), _response_buff.c_str(), 1, 0);

@@ -13,8 +13,8 @@ class	LocationDirective : public ADirectiveBlock
 		LocationDirective(const LocationDirective& other);
 		LocationDirective&	operator=(const LocationDirective& other);
 
-	protected:
 	private:
+		void	checkConflict(ADirective* other, const std::string& config_path);
 };
 
 #endif

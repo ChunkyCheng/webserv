@@ -13,14 +13,15 @@ class	DirectiveCreator
 	
 	public:
 		static ADirective*	create(t_tokens& tokens, const std::string& config_path,
-								   int block_level);
+								   int block_level, std::vector<ADirective*>& others);
 		
 		typedef ADirective* (*t_creator)(void);
+		typedef std::map<std::string, t_creator>	t_creator_map;
 	
 	private:
-		static const std::map<std::string, t_creator>	_creator_map;
+		static const t_creator_map	_creator_map;
 		
-		static std::map<std::string, t_creator> _create_map(void);
+		static t_creator_map	_create_map(void);
 };
 
 #endif

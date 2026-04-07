@@ -34,7 +34,7 @@ const std::string& config_path)
 	while (tokens.front().type != EOF_TOK && tokens.front().value != "}")
 	{
 		_subdirectives.push_back
-		(DirectiveCreator::create(tokens, config_path,_block_level));
+		(DirectiveCreator::create(tokens, config_path,_block_level, _subdirectives));
 	}
 	if (tokens.front().type == EOF_TOK)
 		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, tokens.front(), config_path));

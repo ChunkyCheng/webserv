@@ -110,7 +110,8 @@ bool	ConfigParser::parseTokens(void)
 {
 	while (_tokens.front().type != EOF_TOK)
 	{
-		_directives.push_back(DirectiveCreator::create(_tokens, _config_path, HTTP));
+		_directives.push_back
+		(DirectiveCreator::create(_tokens, _config_path, HTTP, _directives));
 		if (_directives.back() == NULL)
 			return (false);
 	}

@@ -5,6 +5,8 @@
 #include "ServerDirective.hpp"
 #include "LocationDirective.hpp"
 #include "ErrorPageDirective.hpp"
+#include "ListenDirective.hpp"
+#include "MethodDirective.hpp"
 #include <memory>
 
 static ADirective*	createServer(void)
@@ -17,25 +19,37 @@ static ADirective*	createLocation(void)
 	return (new LocationDirective());
 }
 
-static ADirective* createErrorPage(void)
+static ADirective*	createErrorPage(void)
 {
 	return (new ErrorPageDirective());
 }
 
-std::map<std::string, DirectiveCreator::t_creator> DirectiveCreator::_create_map(void)
+static ADirective*	createListen(void)
 {
-	std::map<std::string, DirectiveCreator::t_creator> map;
+	return (new ListenDirective());
+}
 
-	map["server"] = &createServer;
-	map["location"] = &createLocation;
-	map["error_page"] = &createErrorPage;
+static ADirective*	createMethod(void)
+{
+	return (new MethodDirective());
+}
+
+DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
+{
+	t_creator_map	map;
+
+	map["server"]		= &createServer;
+	map["location"]		= &createLocation;
+	map["error_page"]	= &createErrorPage;
+	map["listen"]		= &createListen;
+	map["method"]		= &createMethod;
 	return (map);
 }
 
-const std::map<std::string, DirectiveCreator::t_creator>
-DirectiveCreator::_creator_map = _create_map();
+const DirectiveCreator::t_creator_map DirectiveCreator::_creator_map = _create_map();
 
-ADirective*	DirectiveCreator::create(t_tokens& tokens, const t_str& config_path, int block_level)
+ADirective*	DirectiveCreator::create(t_tokens& tokens, const t_str& config_path,
+int block_level, std::vector<ADirective*>& others)
 {
 	std::string					type;
 	std::auto_ptr<ADirective>	directive;
@@ -46,6 +60,6 @@ ADirective*	DirectiveCreator::create(t_tokens& tokens, const t_str& config_path,
 	if (!_creator_map.count(type))
 		throw (ConfigExcept(ConfigExcept::UNKNOWN_DIR, tokens.front(), config_path));
 	directive = std::auto_ptr<ADirective>(_creator_map.at(type)());
-	directive->init(tokens, config_path, block_level);
+	directive->init(tokens, config_path, block_level, others);
 	return (directive.release());
 }

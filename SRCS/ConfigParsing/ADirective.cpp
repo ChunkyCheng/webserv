@@ -13,7 +13,7 @@ ADirective::~ADirective(void)
 }
 
 void	ADirective::init(t_tokens& tokens, const std::string& config_path,
-int block_level)
+int block_level, std::vector<ADirective*>& others)
 {
 	if (!(block_level & _rules.block_scope))
 		throw (ConfigExcept(ConfigExcept::WRONG_SCOPE, tokens.front(), config_path));
@@ -26,6 +26,15 @@ int block_level)
 	if (_argv.size() < _rules.min_argc || _argv.size() > _rules.max_argc)
 		throw (ConfigExcept(ConfigExcept::WRONG_ARGC, _argv[0], config_path));
 	parse(tokens, config_path);
+	for (unsigned int i = 0; i < others.size(); ++i)
+	{
+		if (_type == others[i]->_type)
+		{
+			if (!_rules.allow_multiple)
+				throw (ConfigExcept(ConfigExcept::DUPLICATE, _argv[0], config_path));
+			checkConflict(others[i], config_path);
+		}
+	}
 }
 
 void	ADirective::consumeSymbolToken(t_tokens& tokens, const std::string& config_path)
@@ -41,4 +50,16 @@ void	ADirective::parse(t_tokens& tokens, const std::string& config_path)
 {
 	(void)tokens;
 	(void)config_path;
+}
+
+void	ADirective::checkConflict(ADirective* other, const std::string& config_path)
+{
+	(void)other;
+	(void)config_path;
+	throw (ConfigExcept(ConfigExcept::CONFLICT, _argv[0], config_path));
+}
+
+void	ADirective::setConfig(Config& config)
+{
+	(void)config;
 }

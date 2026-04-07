@@ -16,7 +16,11 @@ class	ConfigExcept : public std::exception
 			NO_BLOCKOPEN,
 			WRONG_ARGC,
 			INVALID_VAL,
-			ECODE_RANGE
+			ECODE_RANGE,
+			HOST_NOT_FOUND,
+			INVALID_METHOD,
+			DUPLICATE,
+			CONFLICT
 		};
 		ConfigExcept(e_ecode ecode, s_token token, std::string config_path);
 		~ConfigExcept(void) throw();

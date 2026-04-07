@@ -2,6 +2,8 @@
 # define ADIRECTIVE_HPP
 
 # include "ConfigParser.h"
+# include "Config.hpp"
+# include "ConfigExcept.hpp"
 
 class	ADirective
 {
@@ -23,7 +25,10 @@ class	ADirective
 		ADirective&	operator=(const ADirective& other);
 
 	public:
-		void	init(t_tokens& tokens, const t_str& config_path, int block_level);
+		void	init(t_tokens& tokens, const t_str& config_path, int block_level,
+					 std::vector<ADirective*>& others);
+		
+		virtual	void	setConfig(Config& config);
 
 	protected:
 		const std::string		_type;
@@ -32,6 +37,7 @@ class	ADirective
 
 		virtual void	consumeSymbolToken(t_tokens& tokens, const t_str& config_path);
 		virtual void	parse(t_tokens& tokens, const t_str& config_path);
+		virtual void	checkConflict(ADirective* other, const t_str& config_path);
 };
 
 #endif

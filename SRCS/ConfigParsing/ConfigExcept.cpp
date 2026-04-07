@@ -32,6 +32,18 @@ ConfigExcept::ConfigExcept(e_ecode ecode, s_token token, std::string config_path
 		case ECODE_RANGE:
 			ss << "value \"" << token.value << "\" must be between 300 and 599";
 			break ;
+		case HOST_NOT_FOUND:
+			ss << "host not found in \"" << token.value << "\" in \"listen\" directive";
+			break ;
+		case INVALID_METHOD:
+			ss << "invalid method \"" << token.value << "\"";
+			break ;
+		case DUPLICATE:
+			ss << "\"" << token.value << "\" directive is duplicate";
+			break ;
+		case CONFLICT:
+			ss << "conflictig \"" << token.value << "\" directive";
+			break ;
 		default:
 			break ;
 	}

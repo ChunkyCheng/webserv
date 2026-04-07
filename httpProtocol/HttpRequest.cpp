@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/05 18:52:42 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/07 14:28:29 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,7 +82,9 @@ bool	HttpRequest::tokenizeAndParse(std::string& raw_headers)
 		else if (!line.empty())
 		{
 			if (!parseHeaderLine(line))
+			{
 				return (false);
+			}
 			if (line[0] == ' ' || line[0] == '\t')
 			{
 				_error_code = BAD_REQUEST;
@@ -179,10 +181,24 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 
 bool	HttpRequest::parseBody(std::string& req_buff)
 {
-	size_t bytes_needed = _content_length - _body.size();
-	size_t bytes_to_take = 
+	if (_is_chunked)
+		return (parseChunkedBody(req_buff)); // Dont know how to do yet so I will do response first
+	else
+	{
+		size_t bytes_needed = _content_length - _body.size();
+		size_t bytes_to_take = std::min(bytes_needed, req_buff.size());
+		if (bytes_to_take > 0)
+		{
+			_body.append(req_buff, 0, bytes_to_take);
+			req_buff.erase(0, bytes_to_take);
+		}
+		if (_body.size() == _content_length)
+		{
+			return (true);
+		}
+		return (false);
+	}
 }
-
 
 
 bool	HttpRequest::hasBody()

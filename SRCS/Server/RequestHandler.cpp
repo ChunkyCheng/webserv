@@ -45,9 +45,10 @@ void	RequestHandler::processData(void)
 				}
 				else
 				{
-					keep_processing = false;
 					if (_httpRequest.hasError())
 						_state = STATE_ERROR;
+					else
+						keep_processing = false;
 				}
 				break;
 
@@ -55,7 +56,10 @@ void	RequestHandler::processData(void)
 				if (_httpRequest.parseBody(_request_buff))
 					_state = STATE_COMPLETE;
 				else
-					keep_processing = false;
+					if (_httpRequest.hasError())
+						_state = STATE_ERROR;
+					else
+						keep_processing = false;
 				break;
 
 			case STATE_COMPLETE:
@@ -63,6 +67,10 @@ void	RequestHandler::processData(void)
 				break;
 
 			case STATE_ERROR:
+				// if (isFatalError(_httpRequest.getError()))
+				// {
+				// 	_request_buff.clear();
+				// }
 				keep_processing = false;
 				break;
 		}

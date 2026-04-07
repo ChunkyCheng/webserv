@@ -22,17 +22,17 @@ static ADirective* createErrorPage(void)
 	return (new ErrorPageDirective());
 }
 
-std::map<std::string, DirectiveCreator::s_create_info> DirectiveCreator::_create_map(void)
+std::map<std::string, DirectiveCreator::t_creator> DirectiveCreator::_create_map(void)
 {
-	std::map<std::string, DirectiveCreator::s_create_info> map;
+	std::map<std::string, DirectiveCreator::t_creator> map;
 
-	map["server"] = (s_create_info){HTTP, &createServer};
-	map["location"] = (s_create_info){SERVER, &createLocation};
-	map["error_page"] = (s_create_info){HTTP | SERVER | LOCATION, &createErrorPage};
+	map["server"] = &createServer;
+	map["location"] = &createLocation;
+	map["error_page"] = &createErrorPage;
 	return (map);
 }
 
-const std::map<std::string, DirectiveCreator::s_create_info>
+const std::map<std::string, DirectiveCreator::t_creator>
 DirectiveCreator::_creator_map = _create_map();
 
 ADirective*	DirectiveCreator::create(t_tokens& tokens, const t_str& config_path, int block_level)
@@ -45,9 +45,7 @@ ADirective*	DirectiveCreator::create(t_tokens& tokens, const t_str& config_path,
 	type = tokens.front().value;
 	if (!_creator_map.count(type))
 		throw (ConfigExcept(ConfigExcept::UNKNOWN_DIR, tokens.front(), config_path));
-	if (!(_creator_map.at(type).block_scope & block_level))
-		throw (ConfigExcept(ConfigExcept::WRONG_SCOPE, tokens.front(), config_path));
-	directive = std::auto_ptr<ADirective>(_creator_map.at(type).creator());
-	directive->init(tokens, config_path);
+	directive = std::auto_ptr<ADirective>(_creator_map.at(type)());
+	directive->init(tokens, config_path, block_level);
 	return (directive.release());
 }

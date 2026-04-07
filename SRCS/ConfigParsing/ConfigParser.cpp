@@ -9,20 +9,7 @@ static std::map<std::string, s_rules> create_rules(void)
 {
 	std::map<std::string, s_rules>	rules;
 
-	rules["client_max_body_size"]	= (s_rules){HTTP | SERVER | LOCATION, 1, 1};
-	rules["root"] 					= (s_rules){HTTP | SERVER | LOCATION, 1, 1};
-	rules["error_page"]				= (s_rules){HTTP | SERVER | LOCATION, 2, 2};
-	rules["upload_allowed"]			= (s_rules){HTTP | SERVER | LOCATION, 1, 1};
-	rules["upload_store"]			= (s_rules){HTTP | SERVER | LOCATION, 1, 1};
-	rules["return"] 				= (s_rules){HTTP | SERVER | LOCATION, 1, 2};
-	rules["autoindex"]				= (s_rules){HTTP | SERVER | LOCATION, 1, 1};
-	rules["index"]					= (s_rules){HTTP | SERVER | LOCATION, 1, INT_MAX};
-	rules["cgi"] 					= (s_rules){HTTP | SERVER | LOCATION, 3, 3};
-	rules["server"]					= (s_rules){HTTP, 0, 0};
-	rules["location"]				= (s_rules){SERVER, 1, 1};
-	rules["listen"]					= (s_rules){SERVER, 1, 1};
-	rules["methods"]				= (s_rules){LOCATION, 1, 3};
-
+	
 	return (rules);
 }
 const std::map<std::string, s_rules>	ConfigParser::_directive_rules = create_rules();

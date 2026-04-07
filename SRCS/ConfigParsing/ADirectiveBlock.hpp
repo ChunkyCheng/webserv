@@ -7,7 +7,7 @@
 class	ADirectiveBlock	: public ADirective
 {
 	protected:
-		ADirectiveBlock(std::string type, s_directive_rules rules, int block_level);
+		ADirectiveBlock(std::string type, s_rules rules, int block_level);
 		~ADirectiveBlock(void);
 	private:
 		ADirectiveBlock(void);

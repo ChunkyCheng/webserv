@@ -5,8 +5,7 @@
 #include "ConfigExcept.hpp"
 
 ErrorPageDirective::ErrorPageDirective(void)
-	:ADirective("error_page",
-	(s_directive_rules){HTTP | SERVER | LOCATION, 3, INT_MAX, true})
+	:ADirective("error_page", ERROR_PAGE_RULES)
 {
 }
 

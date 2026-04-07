@@ -1,7 +1,7 @@
 #include "LocationDirective.hpp"
 
 LocationDirective::LocationDirective(void)
-	:ADirectiveBlock("location", (s_directive_rules){SERVER, 2, 2, true}, LOCATION)
+	:ADirectiveBlock("location", LOCATION_RULES, LOCATION)
 {
 }
 

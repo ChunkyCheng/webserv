@@ -16,16 +16,11 @@ class	DirectiveCreator
 								   int block_level);
 		
 		typedef ADirective* (*t_creator)(void);
-		struct s_create_info
-		{
-			unsigned int	block_scope;
-			t_creator		creator;
-		};
 	
 	private:
-		static const std::map<std::string, s_create_info>	_creator_map;
+		static const std::map<std::string, t_creator>	_creator_map;
 		
-		static std::map<std::string, DirectiveCreator::s_create_info> _create_map(void);
+		static std::map<std::string, t_creator> _create_map(void);
 };
 
 #endif

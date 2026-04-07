@@ -3,9 +3,7 @@
 #include "DirectiveCreator.hpp"
 #include "ConfigParser.hpp"
 
-ADirectiveBlock::ADirectiveBlock(std::string type,
-								 s_directive_rules rules,
-								 int block_level)
+ADirectiveBlock::ADirectiveBlock(std::string type, s_rules rules, int block_level)
 	:ADirective(type, rules),
 	 _block_level(block_level)
 {

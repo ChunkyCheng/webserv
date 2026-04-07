@@ -3,7 +3,7 @@
 #include "ConfigExcept.hpp"
 #include <iostream>
 
-ADirective::ADirective(std::string type, s_directive_rules rules) 
+ADirective::ADirective(std::string type, s_rules rules) 
 	:_type(type), _rules(rules)
 {
 }
@@ -12,8 +12,11 @@ ADirective::~ADirective(void)
 {
 }
 
-void	ADirective::init(t_tokens& tokens, const std::string& config_path)
+void	ADirective::init(t_tokens& tokens, const std::string& config_path,
+int block_level)
 {
+	if (!(block_level & _rules.block_scope))
+		throw (ConfigExcept(ConfigExcept::WRONG_SCOPE, tokens.front(), config_path));
 	while (tokens.front().type != EOF_TOK && tokens.front().type != SYMBOL)
 	{
 		_argv.push_back(tokens.front());

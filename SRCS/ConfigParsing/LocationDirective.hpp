@@ -4,6 +4,8 @@
 # include "ConfigParser.h"
 # include "ADirectiveBlock.hpp"
 
+class	Location;
+
 class	LocationDirective : public ADirectiveBlock
 {
 	public:
@@ -12,6 +14,9 @@ class	LocationDirective : public ADirectiveBlock
 	private:
 		LocationDirective(const LocationDirective& other);
 		LocationDirective&	operator=(const LocationDirective& other);
+
+	public:
+		Location	createLocation(Config config) const;
 
 	private:
 		void	checkConflict(ADirective* other, const std::string& config_path);

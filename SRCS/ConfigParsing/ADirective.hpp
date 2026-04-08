@@ -25,10 +25,11 @@ class	ADirective
 		ADirective&	operator=(const ADirective& other);
 
 	public:
-		void	init(t_tokens& tokens, const t_str& config_path, int block_level,
-					 std::vector<ADirective*>& others);
-		
-		virtual	void	setConfig(Config& config);
+		const std::string&	getType(void) const;
+
+		void			init(t_tokens& tokens, const t_str& config_path, int block_level,
+							 std::vector<ADirective*>& others);
+		virtual void	setConfig(Config& config) const;
 
 	protected:
 		const std::string		_type;

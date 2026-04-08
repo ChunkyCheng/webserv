@@ -4,15 +4,9 @@
 #include <climits>
 #include "ADirective.hpp"
 #include "DirectiveCreator.hpp"
-
-static std::map<std::string, s_rules> create_rules(void)
-{
-	std::map<std::string, s_rules>	rules;
-
-	
-	return (rules);
-}
-const std::map<std::string, s_rules>	ConfigParser::_directive_rules = create_rules();
+#include "ServerDirective.hpp"
+#include "WebServer.hpp"
+#include "Server.hpp"
 
 ConfigParser::ConfigParser(std::string file_path)
 	:_config_path(file_path)
@@ -106,14 +100,34 @@ void	ConfigParser::printTokens(void) const
 	std::cout << "\e[0m" << std::endl;
 }
 
-bool	ConfigParser::parseTokens(void)
+void	ConfigParser::parseTokens(void)
 {
 	while (_tokens.front().type != EOF_TOK)
 	{
 		_directives.push_back
 		(DirectiveCreator::create(_tokens, _config_path, HTTP, _directives));
-		if (_directives.back() == NULL)
-			return (false);
 	}
-	return (true);
+}
+
+std::vector<Server*>	ConfigParser::createServers(WebServer& webserver) const
+{
+
+	std::vector<ServerDirective*>	server_directives;
+	std::vector<Server*>			servers;
+	Config							config;
+
+	for (unsigned int i = 0; i < _directives.size(); ++i)
+	{
+		if (_directives[i]->getType() == "server")
+			server_directives.push_back(dynamic_cast<ServerDirective*>(_directives[i]));
+		else
+			_directives[i]->setConfig(config);
+	}
+	for (unsigned int i = 0; i < server_directives.size(); ++i)
+	{
+		servers.push_back(server_directives[i]->createServer(webserver, config));
+		if (servers.back() == NULL)
+			servers.pop_back();
+	}
+	return (servers);
 }

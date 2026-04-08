@@ -12,6 +12,11 @@ ADirective::~ADirective(void)
 {
 }
 
+const std::string&	ADirective::getType(void) const
+{
+	return (_type);
+}
+
 void	ADirective::init(t_tokens& tokens, const std::string& config_path,
 int block_level, std::vector<ADirective*>& others)
 {
@@ -56,10 +61,9 @@ void	ADirective::checkConflict(ADirective* other, const std::string& config_path
 {
 	(void)other;
 	(void)config_path;
-	throw (ConfigExcept(ConfigExcept::CONFLICT, _argv[0], config_path));
 }
 
-void	ADirective::setConfig(Config& config)
+void	ADirective::setConfig(Config& config) const
 {
 	(void)config;
 }

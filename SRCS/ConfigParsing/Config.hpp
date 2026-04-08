@@ -11,9 +11,6 @@ class	Config
 		Config&	operator=(const Config& other);
 		~Config(void);
 
-		 
-
-	private:
 		struct s_client_max_body_size
 		{
 			bool		is_defined;
@@ -30,15 +27,23 @@ class	Config
 			std::string	script_dir;
 		};
 
-		s_client_max_body_size				_client_max_body_size;
-		s_return							_return;
-		std::vector<std::string>			_index;
-		bool								_autoindex;
-		std::string							_root;
-		std::map<int, std::string>			_error_pages;
-		bool								_upload_allowed;
-		std::string							_upload_store;
-		std::map<std::string, s_cgi_info>	_cgi_info;
+		s_client_max_body_size				client_max_body_size;
+		s_return							return_info;
+		std::vector<std::string>			index;
+		bool								autoindex;
+		std::string							root;
+		std::map<int, std::string>			error_pages;
+		bool								upload_allowed;
+		std::string							upload_store;
+		std::map<std::string, s_cgi_info>	cgi_info;
+	
+		//Location only	
+		bool								method_get;
+		bool								method_post;
+		bool								method_delete;
+
+		//Server only
+		std::vector<std::string>			listens;
 };
 
 #endif

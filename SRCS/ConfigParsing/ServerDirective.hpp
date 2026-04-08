@@ -3,6 +3,7 @@
 
 # include "ConfigParser.h"
 # include "ADirectiveBlock.hpp"
+# include "WebServer.hpp"
 
 class	ServerDirective : public ADirectiveBlock
 {
@@ -12,6 +13,9 @@ class	ServerDirective : public ADirectiveBlock
 	private:
 		ServerDirective(const ServerDirective& other);
 		ServerDirective&	operator=(const ServerDirective& other);
+
+	public:
+		Server*	createServer(WebServer& webserver, Config config) const;
 
 	protected:
 	private:

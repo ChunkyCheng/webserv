@@ -22,3 +22,10 @@ void	MethodDirective::parse(t_tokens& tokens, const std::string& config_path)
 		_allowed[_argv[i].value] = true;
 	}
 }
+
+void	MethodDirective::setConfig(Config& config) const
+{
+	config.method_get = _allowed.at("GET");
+	config.method_post = _allowed.at("POST");
+	config.method_delete = _allowed.at("DELETE");
+}

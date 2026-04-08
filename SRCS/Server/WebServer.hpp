@@ -14,6 +14,8 @@ class	WebServer
 		WebServer&	operator=(const WebServer& other);
 	
 	public:
+		Epoll&	getEpoll(void);
+
 		void	runServerLoop(void);
 		
 		static void	stopServerLoop(void);

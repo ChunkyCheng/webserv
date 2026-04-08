@@ -1,12 +1,14 @@
 #include "Server.hpp"
+#include "WebServer.hpp"
 #include "Client.hpp"
 #include "Epoll.hpp"
 
-Server::Server(WebServer& webserver, Epoll& epoll)
-	:_webserver(webserver), _epoll(epoll)
+Server::Server(WebServer& webserver, std::vector<Location> locations, Config& config)
+	:_webserver(webserver),
+	 _epoll(webserver.getEpoll()),
+	 _socket_addr(config.listens),
+	 _locations(locations)
 {
-	_socket_addr.push_back("127.0.0.1:8080");
-	_socket_addr.push_back("0.0.0.0:12345");
 	_open_listening_sockets();
 }
 

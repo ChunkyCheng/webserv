@@ -15,6 +15,8 @@ class	ListenDirective : public ADirective
 
 	public:
 		void	parse(t_tokens& token, const std::string& config_path);
+		void	checkConflict(ADirective* other, const std::string& config_path);
+		void	setConfig(Config& config) const;
 
 	private:
 		std::string	_host;

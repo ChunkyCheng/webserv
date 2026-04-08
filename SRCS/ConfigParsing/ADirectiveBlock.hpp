@@ -17,10 +17,11 @@ class	ADirectiveBlock	: public ADirective
 	protected:
 		void	consumeSymbolToken(t_tokens& tokens, const std::string& config_path);
 		void	parse(t_tokens& tokens, const std::string& config_path);
+		
+		std::vector<ADirective*>	_subdirectives;
 
 	private:
-		std::vector<ADirective*>	_subdirectives;
-		int							_block_level;
+		const int					_block_level;
 
 		void	_parseSubDirectives(t_tokens& tokens, const std::string& config_path);
 };

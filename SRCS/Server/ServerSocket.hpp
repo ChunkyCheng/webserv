@@ -8,7 +8,7 @@
 class	ServerSocket : public ISocket
 {
 	public:
-		ServerSocket(Server& server, std::string& socket_addr);
+		ServerSocket(Server& server, const std::string& socket_addr);
 		~ServerSocket(void);
 	private:
 		ServerSocket(void);

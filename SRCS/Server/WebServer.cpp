@@ -9,15 +9,19 @@ WebServer::WebServer(void)
 	ConfigParser	parser("webserv.conf");
 
 	parser.printTokens();
-	if (parser.parseTokens() == false)
-		throw (std::exception());
-	_servers.push_back(new Server(*this, _epoll));
+	parser.parseTokens();
+	_servers = parser.createServers(*this);
 }
 
 WebServer::~WebServer(void)
 {
 	for (unsigned int i = 0; i < _servers.size(); ++i)
 		delete _servers[i];
+}
+
+Epoll&	WebServer::getEpoll(void)
+{
+	return (_epoll);
 }
 
 void	WebServer::runServerLoop(void)

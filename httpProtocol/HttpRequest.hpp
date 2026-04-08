@@ -6,24 +6,19 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/07 19:27:57 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/09 00:26:04 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+#ifndef HTTP_REQUEST
+#define HTTP_REQUEST
 
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <map>
+#include "HttpStatus.hpp"
 
-enum HttpErrStatus
-{
-	NONE = 0,
-	BAD_REQUEST = 400,
-	NOT_FOUND = 404,
-	INTERNAL_SERVER_ERROR = 500,
-	NOT_IMPLEMENTED = 501,
-	HTTP_VERSION_NOT_SUPPORTED = 505
-};
 
 class HttpRequest
 {
@@ -32,7 +27,7 @@ class HttpRequest
 		HttpRequest& operator=(const HttpRequest& other);
 
 		// Track state
-		HttpErrStatus	_error_code;
+		HttpStatus		_error_code;
 
 		// Protocol identifiers
 		std::string		_method; // First line of the request, e.g., "GET", "POST", etc.
@@ -62,10 +57,12 @@ class HttpRequest
 		bool	hasError();
 		bool	hasBody();
 
-		HttpErrStatus						getError() const;
+		HttpStatus							getError() const;
 		const std::string& 					getMethod() const;
 		const std::string& 					getPath() const;
 		const std::string& 					getVersion() const;
 		std::map<std::string, std::string> 	getHeaders() const;
 		size_t								getContentLength() const;
 };
+
+#endif

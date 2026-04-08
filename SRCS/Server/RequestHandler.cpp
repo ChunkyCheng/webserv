@@ -81,5 +81,29 @@ void	RequestHandler::processReqData(void)
 
 void	RequestHandler::buildResponseData(void)
 {
-	_httpResponse.prepareResponse();
+	HttpStatus req_error = _httpRequest.getError();
+	if (req_error != NONE)
+	{
+		_httpResponse.setStatusCode(req_error);
+		_httpResponse.setHeader("Connection", "close");
+		_httpResponse.buildErrorPage(req_error);
+		return ;
+	}
+	std::string method = _httpRequest.getMethod();
+	if (method == "GET")
+	{
+
+	}
+	else if (method == "POST")
+	{
+
+	}
+	else if (method == "DELETE")
+	{
+
+	}
+	else
+	{
+		_httpResponse.buildErrorPage(NOT_IMPLEMENTED);
+	}
 }

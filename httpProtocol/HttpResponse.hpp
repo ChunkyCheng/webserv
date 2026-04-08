@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/07 19:41:43 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/09 01:34:08 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,9 @@
 
 #include <iostream>
 #include <map>
-#include "HttpResponse.hpp"
+#include "HttpStatus.hpp"
+
+class HttpRequest;
 
 class HttpResponse
 {
@@ -24,7 +26,7 @@ class HttpResponse
 		HttpResponse& operator=(const HttpResponse& other);
 
 		std::string	_version;
-		int			_status_code;
+		HttpStatus	_status_code;
 		std::string	_reason_phrase;
 
 		std::map<std::string, std::string>	_headers;
@@ -34,8 +36,8 @@ class HttpResponse
 		HttpResponse();
 		~HttpResponse();
 
-		void	prepareResponse();
-
+		void	setStatusCode(HttpStatus status_code);
+		void	setHeader(const std::string& key, const std::string& value);
 
 };
 

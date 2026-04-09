@@ -11,11 +11,6 @@ class	Config
 		Config&	operator=(const Config& other);
 		~Config(void);
 
-		struct s_client_max_body_size
-		{
-			bool		is_defined;
-			long long	value;
-		};
 		struct s_return
 		{
 			int			code;
@@ -27,11 +22,11 @@ class	Config
 			std::string	script_dir;
 		};
 
-		s_client_max_body_size				client_max_body_size;
+		unsigned long long					client_max_body_size;
 		s_return							return_info;
+		std::string							root;
 		std::vector<std::string>			index;
 		bool								autoindex;
-		std::string							root;
 		std::map<int, std::string>			error_pages;
 		bool								upload_allowed;
 		std::string							upload_store;

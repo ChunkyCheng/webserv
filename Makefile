@@ -3,9 +3,13 @@ CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 #-fsanitize=address
 
 PARSE_DIR		=	ConfigParsing
 PARSE_FILES		=	ConfigParser.cpp		ADirective.cpp			ADirectiveBlock.cpp	\
-					ServerDirective.cpp		LocationDirective.cpp						\
-					ErrorPageDirective.cpp	ListenDirective.cpp		MethodDirective.cpp	\
 					Config.cpp				DirectiveCreator.cpp	ConfigExcept.cpp
+
+DIRECTIVE_DIR	=	$(PARSE_DIR)/directives
+DIRECTIVE_FILES	=	ServerDirective.cpp		LocationDirective.cpp							\
+					ErrorPageDirective.cpp	ListenDirective.cpp		MethodDirective.cpp		\
+					RootDirective.cpp		IndexDirective.cpp		AutoindexDirective.cpp	\
+					ClientMaxDirective.cpp
 
 SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
@@ -14,7 +18,7 @@ SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 					Location.cpp							\
 					RequestHandler.cpp
 
-MODULES		=	PARSE	SERVER
+MODULES		=	PARSE	DIRECTIVE	SERVER
 
 $(foreach M,$(MODULES), $(eval $(M)_SRCS = $(addprefix $($(M)_DIR)/, $($(M)_FILES))))
 
@@ -33,7 +37,7 @@ IFLAGS = $(addprefix -I$(SRC_DIR)/, $(foreach M,$(MODULES), $($(M)_DIR))) -IHEAD
 NEEDS_REBUILD_CMD   :=                                                              \
     for src in $(SRCS); do                                                          \
         obj="$$(echo "$$src" | sed 's|^$(SRC_DIR)|$(OBJ_DIR)|')";                   \
-        obj="$${obj%.c}.o";                                                         \
+        obj="$${obj%.cpp}.o";                                                         \
         if [ ! -f "$$obj" ] || [ "$$src" -nt "$$obj" ]; then echo "$$src"; fi;      \
     done
 NEEDS_REBUILD   :=  $(shell $(NEEDS_REBUILD_CMD))

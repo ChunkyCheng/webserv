@@ -1,7 +1,8 @@
 #include "Config.hpp"
 
 Config::Config(void)
-	:client_max_body_size((s_client_max_body_size){false, 1 << 20}),
+	:client_max_body_size(1 << 20),
+	 root("/var/www/html"),
 	 autoindex(false),
 	 upload_allowed(false)
 {
@@ -10,9 +11,9 @@ Config::Config(void)
 Config::Config(const Config& other)
 	:client_max_body_size(other.client_max_body_size),
 	 return_info(other.return_info),
+	 root(other.root),
 	 index(other.index),
 	 autoindex(other.autoindex),
-	 root(other.root),
 	 error_pages(other.error_pages),
 	 upload_allowed(other.upload_allowed),
 	 upload_store(other.upload_store),

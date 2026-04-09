@@ -19,10 +19,12 @@ class	ConfigExcept : public std::exception
 			ECODE_RANGE,
 			HOST_NOT_FOUND,
 			INVALID_METHOD,
+			INVALID_BOOL,
 			DUPLICATE,
 			CONFLICT
 		};
 		ConfigExcept(e_ecode ecode, s_token token, std::string config_path);
+		ConfigExcept(e_ecode ecode, s_token token, std::string directive, std::string config_path);
 		~ConfigExcept(void) throw();
 
 		const char*	what(void) const throw();

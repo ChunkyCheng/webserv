@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/09 00:59:08 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/09 16:11:41 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,27 @@ void	HttpResponse::setStatusCode(HttpStatus status_code)
 	}
 }
 
-void	HttpResponse::setHeader(const std::string& key, const std::string& value)
+void	HttpResponse::overwriteHeader(const std::string& key, const std::string& value)
 {
-	_headers[key] = value;
+	_headers.erase(key);
+	_headers.insert(std::make_pair(key, value));
+}
+
+void	HttpResponse::addHeader(const std::string& key, const std::string& value)
+{
+	_headers.insert(std::make_pair(key, value));
+}
+
+void	HttpResponse::appendHeader(const std::string& key, const std::string& value)
+{
+	std::multimap<std::string, std::string>::iterator it = _headers.find(key);
+
+	if (it != _headers.end())
+	{
+		it->second += ", " + value;
+	}
+	else
+	{
+		_headers.insert(std::make_pair(key, value));
+	}
 }

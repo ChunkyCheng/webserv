@@ -1,0 +1,69 @@
+#include "ADirective.hpp"
+#include "ConfigParser.hpp"
+#include "ConfigExcept.hpp"
+#include <iostream>
+
+ADirective::ADirective(std::string type, s_rules rules) 
+	:_type(type), _rules(rules)
+{
+}
+
+ADirective::~ADirective(void)
+{
+}
+
+const std::string&	ADirective::getType(void) const
+{
+	return (_type);
+}
+
+void	ADirective::init(t_tokens& tokens, const std::string& config_path,
+int block_level, std::vector<ADirective*>& others)
+{
+	if (!(block_level & _rules.block_scope))
+		throw (ConfigExcept(ConfigExcept::WRONG_SCOPE, tokens.front(), config_path));
+	while (tokens.front().type != EOF_TOK && tokens.front().type != SYMBOL)
+	{
+		_argv.push_back(tokens.front());
+		tokens.pop_front();
+	}
+	consumeSymbolToken(tokens, config_path);
+	if (_argv.size() < _rules.min_argc || _argv.size() > _rules.max_argc)
+		throw (ConfigExcept(ConfigExcept::WRONG_ARGC, _argv[0], config_path));
+	parse(tokens, config_path);
+	for (unsigned int i = 0; i < others.size(); ++i)
+	{
+		if (_type == others[i]->_type)
+		{
+			if (!_rules.allow_multiple)
+				throw (ConfigExcept(ConfigExcept::DUPLICATE, _argv[0], config_path));
+			checkConflict(others[i], config_path);
+		}
+	}
+}
+
+void	ADirective::consumeSymbolToken(t_tokens& tokens, const std::string& config_path)
+{
+	if (tokens.front().type == EOF_TOK)
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_EOF, tokens.front(), config_path));
+	if (tokens.front().value != ";")
+		throw (ConfigExcept(ConfigExcept::UNEXPECTED_TOK, tokens.front(), config_path));
+	tokens.pop_front();
+}
+
+void	ADirective::parse(t_tokens& tokens, const std::string& config_path)
+{
+	(void)tokens;
+	(void)config_path;
+}
+
+void	ADirective::checkConflict(ADirective* other, const std::string& config_path)
+{
+	(void)other;
+	(void)config_path;
+}
+
+void	ADirective::setConfig(Config& config) const
+{
+	(void)config;
+}

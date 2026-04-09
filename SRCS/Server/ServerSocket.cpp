@@ -1,7 +1,7 @@
 #include "ServerSocket.hpp"
 #include "Server.hpp"
 
-ServerSocket::ServerSocket(Server& server, std::string& socket_addr)
+ServerSocket::ServerSocket(Server& server, const std::string& socket_addr)
 	:_server(server)
 {
 	std::string			ip;

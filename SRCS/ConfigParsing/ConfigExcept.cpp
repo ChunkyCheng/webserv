@@ -51,6 +51,27 @@ ConfigExcept::ConfigExcept(e_ecode ecode, s_token token, std::string config_path
 	_message = ss.str();
 }
 
+ConfigExcept::ConfigExcept(e_ecode ecode, s_token token,
+std::string directive, std::string config_path)
+{
+	std::stringstream	ss;
+
+	ss << "Error: ";
+	switch (ecode)
+	{
+		case CONFLICT:
+			ss << "duplicate " << directive << " \"" << token.value << "\"";
+			break ;
+		case INVALID_BOOL:
+			ss << "invalid value \"" << token.value << "\" in " << directive << " directive";
+			ss << ", it must be \"on\" or \"off\"";
+			break ;
+		default:
+			break ;
+	}
+	ss << " in " << config_path << ":" << token.line_num;
+	_message = ss.str();
+}
 ConfigExcept::~ConfigExcept(void) throw()
 {
 }

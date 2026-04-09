@@ -23,7 +23,7 @@ void	ListenDirective::parse(t_tokens& tokens, const std::string& config_path)
 void	ListenDirective::checkConflict(ADirective* other, const std::string& config_path)
 {
 	if (_host == dynamic_cast<ListenDirective*>(other)->_host)
-		throw (ConfigExcept(ConfigExcept::CONFLICT, _argv[0], config_path));
+		throw (ConfigExcept(ConfigExcept::CONFLICT, _argv[0], _type, config_path));
 }
 
 void	ListenDirective::setConfig(Config& config) const

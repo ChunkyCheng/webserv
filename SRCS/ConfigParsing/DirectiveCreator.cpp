@@ -2,11 +2,17 @@
 #include "ConfigParser.hpp"
 #include "ADirective.hpp"
 #include "ConfigExcept.hpp"
+
 #include "ServerDirective.hpp"
 #include "LocationDirective.hpp"
 #include "ErrorPageDirective.hpp"
 #include "ListenDirective.hpp"
 #include "MethodDirective.hpp"
+#include "ClientMaxDirective.hpp"
+#include "RootDirective.hpp"
+#include "IndexDirective.hpp"
+#include "AutoindexDirective.hpp"
+
 #include <memory>
 
 static ADirective*	createServer(void)
@@ -34,15 +40,39 @@ static ADirective*	createMethod(void)
 	return (new MethodDirective());
 }
 
+static ADirective* createClientMax(void)
+{
+	return (new ClientMaxDirective());
+}
+
+static ADirective*	createRoot(void)
+{
+	return (new RootDirective());
+}
+
+static ADirective*	createIndex(void)
+{
+	return (new IndexDirective());
+}
+
+static ADirective*	createAutoindex(void)
+{
+	return (new AutoindexDirective());
+}
+
 DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 {
 	t_creator_map	map;
 
-	map["server"]		= &createServer;
-	map["location"]		= &createLocation;
-	map["error_page"]	= &createErrorPage;
-	map["listen"]		= &createListen;
-	map["method"]		= &createMethod;
+	map["server"]				= &createServer;
+	map["location"]				= &createLocation;
+	map["error_page"]			= &createErrorPage;
+	map["listen"]				= &createListen;
+	map["method"]				= &createMethod;
+	map["client_max_body_size"]	= &createClientMax;
+	map["root"]					= &createRoot;
+	map["index"]				= &createIndex;
+	map["autoindex"]			= &createAutoindex;
 	return (map);
 }
 

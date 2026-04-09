@@ -8,7 +8,7 @@ WebServer::WebServer(void)
 {
 	ConfigParser	parser("webserv.conf");
 
-	parser.printTokens();
+	//parser.printTokens();
 	parser.parseTokens();
 	_servers = parser.createServers(*this);
 }

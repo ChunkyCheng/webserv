@@ -16,6 +16,16 @@ RequestHandler::~RequestHandler(void)
 {
 }
 
+void	RequestHandler::reset(void)
+{
+	_req_state = REQ_READING_HEADERS;
+	_res_state = RES_HEADERS;
+	_httpRequest.reset();
+	_httpResponse.reset();
+	if (file_stream.is_open()) // <-- close any file stream that is left open, put in the std::ifstream  member variable
+		_file_stream.close();
+}
+
 bool	RequestHandler::checkRequestComplete(void) const
 {
 	return (_req_state == REQ_COMPLETE || _req_state == REQ_ERROR);
@@ -85,7 +95,7 @@ void	RequestHandler::buildResponseData(void)
 	if (req_error != NONE)
 	{
 		_httpResponse.setStatusCode(req_error);
-		_httpResponse.setHeader("Connection", "close");
+		_httpResponse.addHeader("Connection", "close");
 		_httpResponse.buildErrorPage(req_error);
 		return ;
 	}

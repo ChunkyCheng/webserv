@@ -18,7 +18,6 @@
 # define ERROR_PAGE_RULES		(ADirective::s_rules){ALL_BLOCK, 2, INT_MAX, true}
 # define UPLOAD_ALLOWED_RULES	(ADirective::s_rules){ALL_BLOCK, 1, 1, false}
 # define UPLOAD_STORE_RULES		(ADirective::s_rules){ALL_BLOCK, 1, 1, false}
-# define RETURN_RULES			(ADirective::s_rules){ALL_BLOCK, 2, 3, false}
 # define AUTOINDEX_RULES		(ADirective::s_rules){ALL_BLOCK, 2, 2, false}
 # define INDEX_RULES			(ADirective::s_rules){ALL_BLOCK, 2, INT_MAX, true}
 # define CGI_RULES				(ADirective::s_rules){ALL_BLOCK, 4, 4, false}
@@ -26,9 +25,11 @@
 # define LOCATION_RULES			(ADirective::s_rules){SERVER, 2, 2, true}
 # define LISTEN_RULES			(ADirective::s_rules){SERVER, 2, 2, true}
 # define METHOD_RULES			(ADirective::s_rules){LOCATION, 2, 4, false}
+# define RETURN_RULES			(ADirective::s_rules){LOCATION, 2, 3, false}
 
 class ConfigParser;
 class ADirective;
+class Config;
 
 enum e_token_type {WORD, SYMBOL, EOF_TOK};
 struct s_token
@@ -39,13 +40,5 @@ struct s_token
 };
 typedef std::deque<s_token>	t_tokens;
 typedef std::string			t_str;
-
-struct s_directive_rules
-{
-	int				block_scope;
-	unsigned int	min_argc;
-	unsigned int	max_argc;
-	bool			allow_multiple;
-};
 
 #endif

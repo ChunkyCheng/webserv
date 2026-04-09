@@ -20,5 +20,5 @@ Location	LocationDirective::createLocation(Config config) const
 {
 	for (unsigned int i = 0; i < _subdirectives.size(); ++i)
 		_subdirectives[i]->setConfig(config);
-	return (Location(config));
+	return (Location(_argv[1].value, config));
 }

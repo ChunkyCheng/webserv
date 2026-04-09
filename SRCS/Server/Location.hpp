@@ -6,15 +6,19 @@
 class	Location
 {
 	public:
-		Location(Config& config);
+		Location(const std::string& prefix, Config& config);
 		Location(const Location& other);
 		Location&	operator=(const Location& other);
 		~Location(void);
 	private:
 		Location(void);
 
+	public:
+		const std::string&	getPrefix(void) const;
+
 	private:
-		Config	_config;
+		std::string	_prefix;
+		Config		_config;
 };
 
 #endif

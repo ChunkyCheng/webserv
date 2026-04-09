@@ -1,12 +1,12 @@
 #include "Location.hpp"
 
-Location::Location(Config& config)
-	:_config(config)
+Location::Location(const std::string& prefix, Config& config)
+	:_prefix(prefix), _config(config)
 {
 }
 
 Location::Location(const Location& other)
-	:_config(other._config)
+	:_prefix(other._prefix), _config(other._config)
 {
 }
 
@@ -14,6 +14,7 @@ Location&	Location::operator=(const Location& other)
 {
 	if (this != &other)
 	{
+		_prefix = other._prefix;
 		_config = other._config;
 	}
 	return (*this);
@@ -21,4 +22,9 @@ Location&	Location::operator=(const Location& other)
 
 Location::~Location(void)
 {
+}
+
+const std::string&	Location::getPrefix(void) const
+{
+	return (_prefix);
 }

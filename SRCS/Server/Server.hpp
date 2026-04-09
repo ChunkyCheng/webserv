@@ -21,6 +21,8 @@ class	Server
 	public:
 		void		createClient(int listening_fd);
 		void		deleteClient(int client_fd);
+
+		const std::vector<Location>&	getLocations(void) const;
 	
 	private:
 		WebServer&						_webserver;

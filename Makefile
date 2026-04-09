@@ -11,6 +11,7 @@ SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 					Server.cpp			ServerSocket.cpp	\
 					Client.cpp			ClientSocket.cpp	\
+					Location.cpp							\
 					RequestHandler.cpp
 
 MODULES		=	PARSE	SERVER

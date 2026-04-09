@@ -68,6 +68,11 @@ void	Server::deleteClient(int client_fd)
 	_clients.erase(client_fd);
 }
 
+const std::vector<Location>&	Server::getLocations(void) const
+{
+	return (_locations);
+}
+
 const char*	Server::NoListeningSocketsException::what(void) const throw()
 {
 	return ("Server::NoListeningSocketsException");

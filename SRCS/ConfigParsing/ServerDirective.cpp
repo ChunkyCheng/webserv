@@ -1,6 +1,7 @@
 #include "ServerDirective.hpp"
 #include "LocationDirective.hpp"
 #include "Server.hpp"
+#include <algorithm>
 
 ServerDirective::ServerDirective(void)
 	:ADirectiveBlock("server", SERVER_RULES, SERVER)
@@ -9,6 +10,11 @@ ServerDirective::ServerDirective(void)
 
 ServerDirective::~ServerDirective(void)
 {
+}
+
+static bool	compare_location_prefix(Location& a, Location& b)
+{
+	return (a.getPrefix().length() > b.getPrefix().length());
 }
 
 Server*	ServerDirective::createServer(WebServer& webserver, Config config) const
@@ -25,6 +31,7 @@ Server*	ServerDirective::createServer(WebServer& webserver, Config config) const
 	}
 	for (unsigned int i = 0; i < location_directives.size(); ++i)
 		locations.push_back(location_directives[i]->createLocation(config));
+	std::sort(locations.begin(), locations.end(), &compare_location_prefix);
 	try
 	{
 		return (new Server(webserver, locations, config));

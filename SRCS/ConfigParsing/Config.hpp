@@ -13,8 +13,8 @@ class	Config
 
 		struct s_return
 		{
-			int			code;
-			std::string	target;
+			unsigned int	code;
+			std::string		target;
 		};
 		struct s_cgi_info
 		{
@@ -22,8 +22,8 @@ class	Config
 			std::string	script_dir;
 		};
 
-		unsigned long long					client_max_body_size;
 		s_return							return_info;
+		unsigned long long					client_max_body_size;
 		std::string							root;
 		std::vector<std::string>			index;
 		bool								autoindex;

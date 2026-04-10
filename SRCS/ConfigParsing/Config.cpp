@@ -9,8 +9,8 @@ Config::Config(void)
 }
 
 Config::Config(const Config& other)
-	:client_max_body_size(other.client_max_body_size),
-	 return_info(other.return_info),
+	:return_info(other.return_info),
+	 client_max_body_size(other.client_max_body_size),
 	 root(other.root),
 	 index(other.index),
 	 autoindex(other.autoindex),
@@ -29,8 +29,8 @@ Config&	Config::operator=(const Config& other)
 {
 	if (this != &other)
 	{
-		client_max_body_size = other.client_max_body_size;
 		return_info = other.return_info;
+		client_max_body_size = other.client_max_body_size;
 		index = other.index;
 		autoindex = other.autoindex;
 		root = other.root;

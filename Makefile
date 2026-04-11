@@ -19,7 +19,9 @@ SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 					Location.cpp							\
 					RequestHandler.cpp
 
-MODULES		=	PARSE	DIRECTIVE	SERVER
+UTILS_DIR		=	utils
+
+MODULES		=	PARSE	DIRECTIVE	SERVER UTILS
 
 $(foreach M,$(MODULES), $(eval $(M)_SRCS = $(addprefix $($(M)_DIR)/, $($(M)_FILES))))
 

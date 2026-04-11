@@ -13,8 +13,8 @@ class	Config
 
 		struct s_return
 		{
-			unsigned int	code;
-			std::string		target;
+			int			code;
+			std::string	target;
 		};
 		struct s_cgi_info
 		{

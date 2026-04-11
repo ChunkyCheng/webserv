@@ -23,13 +23,13 @@ void	ClientMaxDirective::parse(t_tokens& tokens, const std::string& config_path)
 		multiplier = 1 << 30;
 	else if (*endptr == 'M')
 		multiplier = 1 << 20;
-	else if (std::isdigit(*endptr))
+	else if (*endptr == '\0')
 		multiplier = 1;
 	else
-		throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[1], config_path));
+		throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[1], _type, config_path));
 	_size = num * multiplier;
 	if (errno == ERANGE || errno == EINVAL || _size / multiplier != num)
-		throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[1], config_path));
+		throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[1], _type, config_path));
 }
 
 void	ClientMaxDirective::setConfig(Config& config) const

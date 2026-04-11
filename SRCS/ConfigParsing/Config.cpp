@@ -1,10 +1,14 @@
 #include "Config.hpp"
 
 Config::Config(void)
-	:client_max_body_size(1 << 20),
+	:return_info((s_return){-1, ""}), 
+	 client_max_body_size(1 << 20),
 	 root("/var/www/html"),
 	 autoindex(false),
-	 upload_allowed(false)
+	 upload_allowed(false),
+	 method_get(false),
+	 method_post(false),
+	 method_delete(false)
 {
 }
 

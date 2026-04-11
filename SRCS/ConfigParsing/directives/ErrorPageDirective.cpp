@@ -40,3 +40,15 @@ void	ErrorPageDirective::parse(t_tokens& tokens, const std::string& config_path)
 		_code_destinations[errorcode] = dest;
 	}
 }
+
+void	ErrorPageDirective::setConfig(Config& config) const
+{
+	std::map<int, std::string>::const_iterator	it;
+
+	it = _code_destinations.begin();
+	while (it != _code_destinations.end())
+	{
+		config.error_pages[it->first] = it->second;
+		++it;
+	}
+}

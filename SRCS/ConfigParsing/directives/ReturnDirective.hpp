@@ -18,8 +18,8 @@ class	ReturnDirective : public ADirective
 		void	setConfig(Config& config) const;
 
 	private:
-		unsigned int	_code;
-		std::string		_target;
+		int			_code;
+		std::string	_target;
 };
 
 #endif

@@ -6,21 +6,12 @@ bool	WebServer::_runServer = false;
 
 WebServer::WebServer(void)
 {
-	ConfigParser	parser("webserv.conf");
-	unsigned int	i = 0;
+	_initServer("webserv.conf");
+}
 
-	//parser.printTokens();
-	parser.parseTokens();
-	_servers = parser.createServers(*this);
-	while (_servers.size())
-	{
-		std::cout << *_servers[i];
-		++i;
-		if (i == _servers.size())
-			break;
-		std::cout << "\n=====================================\n";
-	}
-	std::cout << std::endl;
+WebServer::WebServer(const std::string config_path)
+{
+	_initServer(config_path);
 }
 
 WebServer::~WebServer(void)
@@ -32,6 +23,27 @@ WebServer::~WebServer(void)
 Epoll&	WebServer::getEpoll(void)
 {
 	return (_epoll);
+}
+
+void	WebServer::_initServer(const std::string config_path)
+{
+	ConfigParser	parser(config_path);
+	unsigned int	i = 0;
+
+	//parser.printTokens();
+	if (parser.getTokens().size() == 0)
+		return ;
+	parser.parseTokens();
+	_servers = parser.createServers(*this);
+	while (_servers.size())
+	{
+		std::cout << *_servers[i];
+		++i;
+		if (i == _servers.size())
+			break;
+		std::cout << "\n=====================================\n";
+	}
+	std::cout << std::endl;
 }
 
 void	WebServer::runServerLoop(void)

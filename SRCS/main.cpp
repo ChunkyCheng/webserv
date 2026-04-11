@@ -18,13 +18,25 @@ int	main(int argc, char *argv[])
 	}
 	try
 	{
-		WebServer	webserv;
-
-		signal(SIGINT, &sigint);
-		webserv.runServerLoop();
+		if (argc == 2)
+		{
+			WebServer	webserv(argv[1]);
+		
+			signal(SIGINT, &sigint);
+			webserv.runServerLoop();
+		}
+		else
+		{
+			WebServer	webserv;
+			
+			signal(SIGINT, &sigint);
+			webserv.runServerLoop();
+		}
 	}
 	catch (std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		return (1);
 	}
+	return (0);
 }

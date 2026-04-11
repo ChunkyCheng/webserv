@@ -16,7 +16,7 @@ ConfigParser::ConfigParser(std::string file_path)
 	infile.open(file_path.c_str());
 	if (!infile.is_open())
 	{
-		std::cerr << "Failed to open " << file_path << std::endl;
+		std::cerr << "Error: Failed to open \"" << file_path << "\"" << std::endl;
 		return ;
 	}
 	_tokenize(infile);
@@ -28,7 +28,7 @@ ConfigParser::~ConfigParser(void)
 		delete _directives[i];
 }
 
-std::deque<s_token>&	ConfigParser::getTokens(void)
+const std::deque<s_token>&	ConfigParser::getTokens(void) const
 {
 	return (_tokens);
 }

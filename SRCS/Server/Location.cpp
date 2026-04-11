@@ -1,4 +1,5 @@
 #include "Location.hpp"
+#include "utils.hpp"
 
 Location::Location(const std::string& prefix, Config& config)
 	:_prefix(prefix), _config(config)
@@ -29,7 +30,7 @@ const std::string&	Location::getPrefix(void) const
 	return (_prefix);
 }
 
-const unsigned int&	Location::getReturnCode(void) const
+const int&	Location::getReturnCode(void) const
 {
 	return (_config.return_info.code);
 }
@@ -77,4 +78,30 @@ const bool&	Location::isAutoindex(void) const
 const std::map<int, std::string>&	Location::getErrorPages(void) const
 {
 	return (_config.error_pages);
+}
+
+std::ostream&	operator<<(std::ostream& os, const Location& obj)
+{
+	os << "Prefix: " << obj.getPrefix() << "\n";
+	os << "Return: " << obj.getReturnCode() << " " << obj.getReturnTarget() << "\n";
+	os << "Methods:";
+	if (obj.isGet())
+		os << " GET";
+	if (obj.isPost())
+		os << " POST";
+	if (obj.isDelete())
+		os << " DELETE";
+	if (!obj.isGet() && !obj.isPost() && !obj.isDelete())
+		os << " NONE";
+	os << "\n";
+	os << "Client max body size: " << obj.getClientMaxBodySize() << "\n";
+	os << "Root: " << obj.getRoot() << "\n";
+	os << "Index: " << obj.getIndex() << "\n";
+	os << "Autoindex: ";
+	if (obj.isAutoindex())
+		os << "on" << "\n";
+	else
+		os << "off" << "\n";
+	os << "Error pages: " << obj.getErrorPages();
+	return (os);
 }

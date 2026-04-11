@@ -7,10 +7,20 @@ bool	WebServer::_runServer = false;
 WebServer::WebServer(void)
 {
 	ConfigParser	parser("webserv.conf");
+	unsigned int	i = 0;
 
 	//parser.printTokens();
 	parser.parseTokens();
 	_servers = parser.createServers(*this);
+	while (_servers.size())
+	{
+		std::cout << *_servers[i];
+		++i;
+		if (i == _servers.size())
+			break;
+		std::cout << "\n=====================================\n";
+	}
+	std::cout << std::endl;
 }
 
 WebServer::~WebServer(void)

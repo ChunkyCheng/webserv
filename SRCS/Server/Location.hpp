@@ -16,7 +16,7 @@ class	Location
 
 	public:
 		const std::string&					getPrefix(void) const;
-		const unsigned int&					getReturnCode(void) const;
+		const int&							getReturnCode(void) const;
 		const std::string&					getReturnTarget(void) const;
 		const bool&							isGet(void) const;
 		const bool&							isPost(void) const;
@@ -31,5 +31,7 @@ class	Location
 		std::string	_prefix;
 		Config		_config;
 };
+
+std::ostream&	operator<<(std::ostream& os, const Location& obj);
 
 #endif

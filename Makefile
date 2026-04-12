@@ -1,6 +1,9 @@
 CXX			=	c++
 CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 #-fsanitize=address
 
+HTTP_DIR	=	httpProtocol
+HTTP_FILES	=	HttpRequest.cpp			HttpResponse.cpp
+
 PARSE_DIR		=	ConfigParsing
 PARSE_FILES		=	ConfigParser.cpp		ADirective.cpp			ADirectiveBlock.cpp	\
 					Config.cpp				DirectiveCreator.cpp	ConfigExcept.cpp
@@ -21,7 +24,7 @@ SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 
 UTILS_DIR		=	utils
 
-MODULES		=	PARSE	DIRECTIVE	SERVER UTILS
+MODULES		=	PARSE	DIRECTIVE	SERVER	HTTP	UTILS
 
 $(foreach M,$(MODULES), $(eval $(M)_SRCS = $(addprefix $($(M)_DIR)/, $($(M)_FILES))))
 

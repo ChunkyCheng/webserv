@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/09 16:21:34 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/12 21:28:11 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,12 +37,18 @@ class HttpResponse
 		HttpResponse();
 		~HttpResponse();
 
-		void	setStatusCode(HttpStatus status_code);
-		void	overwriteHeader(const std::string& key, const std::string& value);
-		void	addHeader(const std::string& key, const std::string& value);
-		void	appendHeader(const std::string& key, const std::string& value);
+		void		setStatusCode(HttpStatus status_code);
+		void		overwriteHeader(const std::string& key, const std::string& value);
+		void		addHeader(const std::string& key, const std::string& value);
+		void		appendHeader(const std::string& key, const std::string& value);
+		
+		const std::string&	getBody() const;
 
+		void		setBody(const std::string& body);
 
+		void		buildErrorPage(HttpStatus error_code);
+		std::string	sizeToString(size_t number);
+		std::string	toString();
 };
 
 #endif

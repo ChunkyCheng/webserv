@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/09 16:16:56 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/12 21:16:35 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -181,9 +181,9 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 
 bool	HttpRequest::parseBody(std::string& req_buff)
 {
-	if (_is_chunked)
-		return (parseChunkedBody(req_buff)); // Dont know how to do yet so I will do response first
-	else
+	// if (_is_chunked)
+	// 	return (parseChunkedBody(req_buff)); // Dont know how to do yet so I will do response first
+	// else
 	{
 		size_t bytes_needed = _content_length - _body.size();
 		size_t bytes_to_take = std::min(bytes_needed, req_buff.size());

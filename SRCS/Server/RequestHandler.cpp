@@ -16,15 +16,15 @@ RequestHandler::~RequestHandler(void)
 {
 }
 
-void	RequestHandler::reset(void)
-{
-	_req_state = REQ_READING_HEADERS;
-	_res_state = RES_HEADERS;
-	_httpRequest.reset();
-	_httpResponse.reset();
-	if (file_stream.is_open()) // <-- close any file stream that is left open, put in the std::ifstream  member variable
-		_file_stream.close();
-}
+// void	RequestHandler::reset(void)
+// {
+// 	_req_state = REQ_READING_HEADERS;
+// 	_res_state = RES_HEADERS;
+// 	_httpRequest.reset();
+// 	_httpResponse.reset();
+// 	if (file_stream.is_open()) // <-- close any file stream that is left open, put in the std::ifstream  member variable
+// 		_file_stream.close();
+// }
 
 bool	RequestHandler::checkRequestComplete(void) const
 {
@@ -33,7 +33,12 @@ bool	RequestHandler::checkRequestComplete(void) const
 
 void	RequestHandler::continueBuildResponse(void)
 {
-
+	if (_res_state == RES_HEADERS)
+	{
+		_response_buff += _httpResponse.toString();
+		_response_buff += _httpResponse.getBody();
+	}
+	_res_state = RES_FINISHED;
 }
 
 bool	RequestHandler::checkResponseComplete(void) const
@@ -102,14 +107,27 @@ void	RequestHandler::buildResponseData(void)
 	std::string method = _httpRequest.getMethod();
 	if (method == "GET")
 	{
-
+		_httpResponse.setStatusCode(OK);
+		std::string dummy = "<html><body><h1>Hahaha GET</h1></body></html>";
+		_httpResponse.addHeader("Content-Type", "text/html");
+		std::ostringstream ss;
+		ss << dummy.length();
+		_httpResponse.addHeader("Content-Length", ss.str());
+		_httpResponse.setBody(dummy);
 	}
 	else if (method == "POST")
 	{
+		_httpResponse.setStatusCode(OK);
+		std::string dummy = "<html><body><h1>Hahaha POST</h1></body></html>";
+		_httpResponse.addHeader("Content-Type", "text/html");
+		std::ostringstream ss;
+		ss << dummy.length();
+		_httpResponse.addHeader("Content-Length", ss.str());
+		_httpResponse.setBody(dummy);
 	}
 	else if (method == "DELETE")
 	{
-
+		_httpResponse.setStatusCode(NO_CONTENT);
 	}
 	else
 	{

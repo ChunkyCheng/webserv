@@ -3,8 +3,8 @@
 
 #include "socket.h"
 #include "Server.hpp"
-#include "../../httpProtocol/HttpRequest.hpp"
-#include "../../httpProtocol/HttpResponse.hpp"
+#include "../httpProtocol/HttpRequest.hpp"
+#include "../httpProtocol/HttpResponse.hpp"
 
 enum ResponseState
 {
@@ -32,13 +32,13 @@ class	RequestHandler
 		RequestHandler&	operator=(const RequestHandler& other);
 
 	public:
-		RequestState	getState() const;
+		// RequestState	getState() const;
 		bool			checkRequestComplete(void) const;
 		void			continueBuildResponse(void);
 		bool			checkResponseComplete(void) const;
 		void			processReqData(void);
 		void			buildResponseData(void);
-		void			reset();
+		// void			reset();
 
 	protected:
 	private:

@@ -106,7 +106,6 @@ void	RequestHandler::buildResponseData(void)
 	}
 	else if (method == "POST")
 	{
-
 	}
 	else if (method == "DELETE")
 	{

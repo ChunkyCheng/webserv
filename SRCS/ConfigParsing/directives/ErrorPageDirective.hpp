@@ -15,6 +15,7 @@ class	ErrorPageDirective : public ADirective
 
 	public:
 		void	parse(t_tokens& tokens, const std::string& config_path);
+		void	setConfig(Config& config) const;
 
 	private:
 		std::map<int, std::string>	_code_destinations;

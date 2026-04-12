@@ -18,8 +18,8 @@ class	ConfigParser
 		ConfigParser&	operator=(const ConfigParser& other);
 
 	public:
-		std::deque<s_token>&	getTokens(void);
-		const std::string&		getConfigPath(void) const;
+		const std::deque<s_token>&	getTokens(void) const;
+		const std::string&			getConfigPath(void) const;
 
 		void					printTokens(void) const;
 		void					parseTokens(void);

@@ -73,6 +73,22 @@ const std::vector<Location>&	Server::getLocations(void) const
 	return (_locations);
 }
 
+std::ostream&	operator<<(std::ostream& os, const Server& obj)
+{
+	const std::vector<Location>&	locations = obj.getLocations();
+	unsigned int					i = 0;
+
+	while (locations.size())
+	{
+		os << locations[i];
+		++i;
+		if (i == locations.size())
+			break ;
+		os << "\n\n";
+	}
+	return (os);
+}
+
 const char*	Server::NoListeningSocketsException::what(void) const throw()
 {
 	return ("Server::NoListeningSocketsException");

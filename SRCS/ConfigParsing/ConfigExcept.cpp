@@ -26,9 +26,6 @@ ConfigExcept::ConfigExcept(e_ecode ecode, s_token token, std::string config_path
 		case WRONG_ARGC:
 			ss << "invalid number of arguments in \"" << token.value << "\" directive";
 			break ;
-		case INVALID_VAL:
-			ss << "invalid value \"" << token.value << "\"";
-			break ;
 		case ECODE_RANGE:
 			ss << "value \"" << token.value << "\" must be between 300 and 599";
 			break ;
@@ -62,9 +59,13 @@ std::string directive, std::string config_path)
 		case CONFLICT:
 			ss << "duplicate " << directive << " \"" << token.value << "\"";
 			break ;
+		case INVALID_VAL:
+			ss << "invalid value \"" << token.value << "\" in " << directive;
+			ss << " directive";
+			break ;
 		case INVALID_BOOL:
-			ss << "invalid value \"" << token.value << "\" in " << directive << " directive";
-			ss << ", it must be \"on\" or \"off\"";
+			ss << "invalid value \"" << token.value << "\" in " << directive;
+			ss << " directive, it must be \"on\" or \"off\"";
 			break ;
 		default:
 			break ;

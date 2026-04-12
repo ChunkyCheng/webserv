@@ -45,4 +45,6 @@ class	Server
 		};
 };
 
+std::ostream&	operator<<(std::ostream& os, const Server& obj);
+
 #endif

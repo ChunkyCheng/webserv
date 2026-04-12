@@ -6,10 +6,11 @@ PARSE_FILES		=	ConfigParser.cpp		ADirective.cpp			ADirectiveBlock.cpp	\
 					Config.cpp				DirectiveCreator.cpp	ConfigExcept.cpp
 
 DIRECTIVE_DIR	=	$(PARSE_DIR)/directives
-DIRECTIVE_FILES	=	ServerDirective.cpp		LocationDirective.cpp							\
-					ErrorPageDirective.cpp	ListenDirective.cpp		MethodDirective.cpp		\
-					RootDirective.cpp		IndexDirective.cpp		AutoindexDirective.cpp	\
-					ClientMaxDirective.cpp
+DIRECTIVE_FILES	=	ServerDirective.cpp				LocationDirective.cpp		\
+					ErrorPageDirective.cpp			ListenDirective.cpp			\
+					MethodDirective.cpp				RootDirective.cpp			\
+					IndexDirective.cpp				AutoindexDirective.cpp		\
+					ClientMaxDirective.cpp			ReturnDirective.cpp
 
 SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
@@ -18,7 +19,9 @@ SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 					Location.cpp							\
 					RequestHandler.cpp
 
-MODULES		=	PARSE	DIRECTIVE	SERVER
+UTILS_DIR		=	utils
+
+MODULES		=	PARSE	DIRECTIVE	SERVER UTILS
 
 $(foreach M,$(MODULES), $(eval $(M)_SRCS = $(addprefix $($(M)_DIR)/, $($(M)_FILES))))
 

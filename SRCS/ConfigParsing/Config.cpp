@@ -1,16 +1,20 @@
 #include "Config.hpp"
 
 Config::Config(void)
-	:client_max_body_size(1 << 20),
+	:return_info((s_return){-1, ""}), 
+	 client_max_body_size(1 << 20),
 	 root("/var/www/html"),
 	 autoindex(false),
-	 upload_allowed(false)
+	 upload_allowed(false),
+	 method_get(false),
+	 method_post(false),
+	 method_delete(false)
 {
 }
 
 Config::Config(const Config& other)
-	:client_max_body_size(other.client_max_body_size),
-	 return_info(other.return_info),
+	:return_info(other.return_info),
+	 client_max_body_size(other.client_max_body_size),
 	 root(other.root),
 	 index(other.index),
 	 autoindex(other.autoindex),
@@ -29,8 +33,8 @@ Config&	Config::operator=(const Config& other)
 {
 	if (this != &other)
 	{
-		client_max_body_size = other.client_max_body_size;
 		return_info = other.return_info;
+		client_max_body_size = other.client_max_body_size;
 		index = other.index;
 		autoindex = other.autoindex;
 		root = other.root;

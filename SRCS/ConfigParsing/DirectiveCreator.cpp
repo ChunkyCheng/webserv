@@ -7,7 +7,7 @@
 #include "LocationDirective.hpp"
 #include "ErrorPageDirective.hpp"
 #include "ListenDirective.hpp"
-#include "MethodDirective.hpp"
+#include "MethodsDirective.hpp"
 #include "ClientMaxDirective.hpp"
 #include "RootDirective.hpp"
 #include "IndexDirective.hpp"
@@ -35,9 +35,9 @@ static ADirective*	createListen(void)
 	return (new ListenDirective());
 }
 
-static ADirective*	createMethod(void)
+static ADirective*	createMethods(void)
 {
-	return (new MethodDirective());
+	return (new MethodsDirective());
 }
 
 static ADirective* createClientMax(void)
@@ -68,7 +68,7 @@ DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 	map["location"]				= &createLocation;
 	map["error_page"]			= &createErrorPage;
 	map["listen"]				= &createListen;
-	map["method"]				= &createMethod;
+	map["methods"]				= &createMethods;
 	map["client_max_body_size"]	= &createClientMax;
 	map["root"]					= &createRoot;
 	map["index"]				= &createIndex;

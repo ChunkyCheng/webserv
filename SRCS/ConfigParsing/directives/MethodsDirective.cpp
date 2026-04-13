@@ -1,6 +1,6 @@
-#include "MethodDirective.hpp"
+#include "MethodsDirective.hpp"
 
-MethodDirective::MethodDirective(void)
+MethodsDirective::MethodsDirective(void)
 	:ADirective("method", METHOD_RULES)
 {
 	_allowed["GET"] = false;
@@ -8,11 +8,11 @@ MethodDirective::MethodDirective(void)
 	_allowed["DELETE"] = false;
 }
 
-MethodDirective::~MethodDirective(void)
+MethodsDirective::~MethodsDirective(void)
 {
 }
 
-void	MethodDirective::parse(t_tokens& tokens, const std::string& config_path)
+void	MethodsDirective::parse(t_tokens& tokens, const std::string& config_path)
 {
 	(void)tokens;
 	for (unsigned int i = 1; i < _argv.size(); ++i)
@@ -23,7 +23,7 @@ void	MethodDirective::parse(t_tokens& tokens, const std::string& config_path)
 	}
 }
 
-void	MethodDirective::setConfig(Config& config) const
+void	MethodsDirective::setConfig(Config& config) const
 {
 	config.method_get = _allowed.at("GET");
 	config.method_post = _allowed.at("POST");

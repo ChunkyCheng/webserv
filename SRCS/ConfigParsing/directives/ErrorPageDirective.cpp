@@ -36,7 +36,7 @@ void	ErrorPageDirective::parse(t_tokens& tokens, const std::string& config_path)
 			throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[i], _type, config_path));
 		errorcode = std::strtol(_argv[i].value.c_str(), NULL, 10);
 		if (errorcode < 300 || errorcode > 599 || errno == ERANGE)
-			throw (ConfigExcept(ConfigExcept::ECODE_RANGE, _argv[i], _type, config_path));
+			throw (ConfigExcept(ConfigExcept::ECODE_RANGE, _argv[i], config_path));
 		_code_destinations[errorcode] = dest;
 	}
 }

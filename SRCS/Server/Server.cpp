@@ -37,7 +37,6 @@ void	Server::_open_listening_sockets(void)
 		}
 		catch (std::exception& e)
 		{
-			std::cerr << e.what() << std::endl;
 		}
 	}
 	if (_listening_sockets.size() == 0)

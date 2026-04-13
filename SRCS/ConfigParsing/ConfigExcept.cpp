@@ -12,7 +12,7 @@ ConfigExcept::ConfigExcept(e_ecode ecode, s_token token, std::string config_path
 			ss << "unexpected \"" << token.value << "\"";
 			break ;
 		case UNEXPECTED_EOF:
-			ss << "unexpected end of file, expecting \"}\"";
+			ss << "unexpected end of file, expecting \"}\" or \";\"";
 			break ;
 		case UNKNOWN_DIR:
 			ss << "unknown directive \"" << token.value << "\"";

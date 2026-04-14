@@ -17,7 +17,7 @@ void	ReturnDirective::parse(t_tokens& tokens, const std::string& config_path)
 		throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[1], _type, config_path));
 	for (unsigned int i = 0; i < _argv[1].value.length(); ++i)
 	{
-		if (std::isdigit(_argv[1].value[i]))
+		if (!std::isdigit(_argv[1].value[i]))
 			throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[1], _type, config_path));
 	}
 	_code = std::atoi(_argv[1].value.c_str());

@@ -105,6 +105,7 @@ void	RequestHandler::buildResponseData(void)
 		return ;
 	}
 	std::string method = _httpRequest.getMethod();
+	std::string path = _httpRequest.getPath();
 	if (method == "GET")
 	{
 		_httpResponse.setStatusCode(OK);

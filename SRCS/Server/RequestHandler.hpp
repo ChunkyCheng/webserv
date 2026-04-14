@@ -5,6 +5,7 @@
 #include "Server.hpp"
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
+#include <fstream>
 
 enum ResponseState
 {
@@ -49,6 +50,8 @@ class	RequestHandler
 		HttpResponse	_httpResponse;
 		RequestState	_req_state;
 		ResponseState	_res_state;
+		std::ifstream	_fileStream;
+		bool			_isFileOpen;
 };
 
 #endif

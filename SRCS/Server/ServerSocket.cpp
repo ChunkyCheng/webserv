@@ -29,14 +29,15 @@ void	ServerSocket::_open_socket(std::string& ip, std::string& port)
 	gai_ret = getaddrinfo(ip.c_str(), port.c_str(), &hints, &res);
 	if (gai_ret != 0)
 	{
-		std::cerr << gai_strerror(gai_ret) << std::endl;
+		std::cerr << "getaddrinfo on " << ip << ":" << port << ": "
+				  << gai_strerror(gai_ret) << std::endl;
 		throw (GaiException());
 	}
 	_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	if (_fd == -1)
 	{
 		freeaddrinfo(res);
-		std::cerr << strerror(errno) << std::endl;
+		std::cerr << "socket:" << strerror(errno) << std::endl;
 		throw (SocketCreateException());
 	}
 	opt = 1;
@@ -49,7 +50,7 @@ void	ServerSocket::_open_socket(std::string& ip, std::string& port)
 	if (bind(_fd, res->ai_addr, res->ai_addrlen) == -1)
 	{
 		freeaddrinfo(res);
-		std::cerr << strerror(errno) << std::endl;
+		std::cerr << "bind on " << ip << ":" << port << ": " << strerror(errno) << std::endl;
 		throw (BindException());
 	}
 	freeaddrinfo(res);

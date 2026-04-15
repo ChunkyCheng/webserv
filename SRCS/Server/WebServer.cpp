@@ -31,7 +31,7 @@ void	WebServer::_initServer(const std::string config_path)
 	unsigned int	i = 0;
 
 	//parser.printTokens();
-	if (parser.getTokens().size() == 0)
+	if (parser.getTokens().size() == 1)
 		return ;
 	parser.parseTokens();
 	_servers = parser.createServers(*this);

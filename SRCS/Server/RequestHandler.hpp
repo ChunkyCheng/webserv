@@ -7,6 +7,7 @@
 #include "Location.hpp"
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
+#include <fstream>
 
 enum ResponseState
 {

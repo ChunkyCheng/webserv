@@ -1,13 +1,11 @@
 #ifndef REQUESTHANDLER_HPP
 #define REQUESTHANDLER_HPP
 
-#include <fstream>
 #include "socket.h"
 #include "Server.hpp"
 #include "Location.hpp"
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
-#include <fstream>
 
 enum ResponseState
 {

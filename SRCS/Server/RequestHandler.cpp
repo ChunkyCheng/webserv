@@ -1,5 +1,6 @@
 #include "RequestHandler.hpp"
 #include <cstdlib>
+#include <unistd.h>
 
 RequestHandler::RequestHandler(Server& server,
 std::string& req_buff, std::string& res_buff)
@@ -8,7 +9,9 @@ std::string& req_buff, std::string& res_buff)
 	_response_buff(res_buff),
 	_httpRequest(),
 	_req_state(REQ_READING_HEADERS),
-	_res_state(RES_HEADERS)
+	_res_state(RES_HEADERS),
+	_matchedLocation(NULL),
+	_isFileOpen(false)
 {
 }
 
@@ -33,12 +36,30 @@ bool	RequestHandler::checkRequestComplete(void) const
 
 void	RequestHandler::continueBuildResponse(void)
 {
-	if (_res_state == RES_HEADERS)
+	if (_res_state == RES_BODY)
 	{
-		_response_buff += _httpResponse.toString();
-		_response_buff += _httpResponse.getBody();
+		if (_isFileOpen)
+		{
+			char chunk[8192];
+			_fileInStream.read(chunk, sizeof(chunk));
+			std::streamsize bytesRead = _fileInStream.gcount();
+			if (bytesRead > 0)
+			{
+				_response_buff.append(chunk, bytesRead);
+			}
+			if (_fileInStream.eof() || _fileInStream.fail())
+			{
+				_fileInStream.close();
+				_isFileOpen = false;
+				_res_state = RES_FINISHED;
+			}
+		}
 	}
-	_res_state = RES_FINISHED;
+	else
+	{
+		_response_buff += _httpResponse.getBody();
+		_res_state = RES_FINISHED;
+	}
 }
 
 bool	RequestHandler::checkResponseComplete(void) const
@@ -96,41 +117,39 @@ void	RequestHandler::processReqData(void)
 
 void	RequestHandler::buildResponseData(void)
 {
+	std::string path = _httpRequest.getPath();
+	if (!path.empty())
+	{
+		_matchedLocation = matchLocation(path, _server.getLocations());
+	}
 	HttpStatus req_error = _httpRequest.getError();
 	if (req_error != NONE)
 	{
-		_httpResponse.setStatusCode(req_error);
-		_httpResponse.addHeader("Connection", "close");
-		_httpResponse.buildErrorPage(req_error);
+		std::string custom_error_path = "";
+		if (_matchedLocation != NULL)
+		{
+			std::map<int, std::string> error_pages = _matchedLocation->getErrorPages();
+			if (error_pages.find(static_cast<int>(req_error)) != error_pages.end())
+			{
+				custom_error_path = _matchedLocation->getRoot() + error_pages[static_cast<int>(req_error)];
+			}
+		}
+		_httpResponse.buildErrorPage(req_error, custom_error_path);
+		_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
+		_res_state = RES_FINISHED;
 		return ;
 	}
-	std::string method = _httpRequest.getMethod();
-	if (method == "GET")
+	_res_state = RES_BODY;
+}
+
+const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)
+{
+	for (size_t i = 0; i < location.size(); ++i)
 	{
-		_httpResponse.setStatusCode(OK);
-		std::string dummy = "<html><body><h1>Hahaha GET</h1></body></html>";
-		_httpResponse.addHeader("Content-Type", "text/html");
-		std::ostringstream ss;
-		ss << dummy.length();
-		_httpResponse.addHeader("Content-Length", ss.str());
-		_httpResponse.setBody(dummy);
+		if (request_uri.find(location[i].getPrefix()) == 0)
+		{
+			return &location[i];
+		}
 	}
-	else if (method == "POST")
-	{
-		_httpResponse.setStatusCode(OK);
-		std::string dummy = "<html><body><h1>Hahaha POST</h1></body></html>";
-		_httpResponse.addHeader("Content-Type", "text/html");
-		std::ostringstream ss;
-		ss << dummy.length();
-		_httpResponse.addHeader("Content-Length", ss.str());
-		_httpResponse.setBody(dummy);
-	}
-	else if (method == "DELETE")
-	{
-		_httpResponse.setStatusCode(NO_CONTENT);
-	}
-	else
-	{
-		_httpResponse.buildErrorPage(NOT_IMPLEMENTED);
-	}
+	return (NULL);
 }

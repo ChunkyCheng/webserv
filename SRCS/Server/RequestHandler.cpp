@@ -117,6 +117,7 @@ void	RequestHandler::processReqData(void)
 	}
 }
 
+
 void    RequestHandler::buildResponseData(void)
 {
 	std::cout << "\n--- PHASE 3: FILE STREAMING ---" << std::endl;
@@ -192,10 +193,11 @@ void    RequestHandler::buildResponseData(void)
 			_httpResponse.setStatusCode(OK);
 
 			// Add basic headers so the browser knows what to do
-			_httpResponse.addHeader("Content-Type", "text/html");
+			std::string mimeType = _httpResponse.getMimeType(physical_path);
+   			_httpResponse.addHeader("Content-Type", mimeType);
 			_httpResponse.addHeader("Content-Length", _httpResponse.sizeToString(static_cast<size_t>(stat(physical_path.c_str(), &path_info) == 0 ? path_info.st_size : 0)));
 			_response_buff = _httpResponse.getFormattedHeaders();
-			_res_state = RES_BODY; // Drop into RES_BODY so continueBuildResponse takes over!
+			_res_state = RES_BODY;
 		}
 		else
 		{

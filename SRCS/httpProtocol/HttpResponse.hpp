@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/15 22:49:20 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/16 15:59:32 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,7 @@ class HttpResponse
 
 		void		setBody(const std::string& body);
 
+		std::string getMimeType(const std::string& path);
 		void		buildErrorPage(HttpStatus error_code, const std::string& error_file_path);
 		std::string	sizeToString(size_t number) const;
 		std::string	toString();

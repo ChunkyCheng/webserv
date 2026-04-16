@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/15 22:55:08 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/16 15:59:12 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -169,4 +169,27 @@ std::string HttpResponse::toString()
 	response_str += _body;
 	std::cout << "Response str after body: " << response_str << "\n";
 	return (response_str);
+}
+
+std::string HttpResponse::getMimeType(const std::string& path)
+{
+    size_t dotPos = path.find_last_of('.');
+    if (dotPos == std::string::npos)
+        return "text/plain"; 
+
+    std::string ext = path.substr(dotPos);
+
+    if (ext == ".html" || ext == ".htm") return "text/html";
+    if (ext == ".css") return "text/css";
+    if (ext == ".js") return "text/javascript";
+    
+    if (ext == ".png") return "image/png";
+    if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
+    if (ext == ".gif") return "image/gif";
+    if (ext == ".ico") return "image/x-icon";
+    
+    if (ext == ".mp4") return "video/mp4";
+    if (ext == ".mp3") return "audio/mpeg";
+
+    return "text/plain";
 }

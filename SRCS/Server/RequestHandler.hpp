@@ -3,9 +3,9 @@
 
 #include "socket.h"
 #include "Server.hpp"
+#include "Location.hpp"
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
-#include <fstream>
 
 enum ResponseState
 {
@@ -32,6 +32,8 @@ class	RequestHandler
 		RequestHandler(const RequestHandler& other);
 		RequestHandler&	operator=(const RequestHandler& other);
 
+		const Location*	matchLocation(const std::string& request_uri, const std::vector<Location>& location);
+
 	public:
 		// RequestState	getState() const;
 		bool			checkRequestComplete(void) const;
@@ -50,7 +52,9 @@ class	RequestHandler
 		HttpResponse	_httpResponse;
 		RequestState	_req_state;
 		ResponseState	_res_state;
-		std::ifstream	_fileStream;
+		const Location*		_matchedLocation;
+		std::ifstream	_fileInStream;
+		std::ofstream	_fileOutStream;
 		bool			_isFileOpen;
 };
 

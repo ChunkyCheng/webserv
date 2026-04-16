@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/12 21:28:52 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/16 15:59:12 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,11 +39,14 @@ void	HttpResponse::setStatusCode(HttpStatus status_code)
 			break;
 		case INTERNAL_SERVER_ERROR:
 			_reason_phrase = "Internal Server Error";
+			break;
 		case NOT_IMPLEMENTED:
 			_reason_phrase = "Not Implemented";
 			break;
 		default:
-			_reason_phrase = "Unknown";
+			_status_code = INTERNAL_SERVER_ERROR;
+			_reason_phrase = "Internal Server Error";
+			std::cerr << "[HTTP ERROR] Unhandled HttpStatus passed to setStatusCode\n";
 			break;
 	}
 }
@@ -73,10 +76,10 @@ void	HttpResponse::appendHeader(const std::string& key, const std::string& value
 	}
 }
 
-std::string HttpResponse::sizeToString(size_t number)
+std::string HttpResponse::sizeToString(size_t number) const
 {
 	if (number == 0)
-		return (0);
+		return ("0");
 	std::string result = "";
 	while (number > 0)
 	{
@@ -86,16 +89,51 @@ std::string HttpResponse::sizeToString(size_t number)
 	return (result);
 }
 
-void	HttpResponse::buildErrorPage(HttpStatus error_code)
+std::string HttpResponse::getFormattedHeaders() const
+{
+	std::string output = "";
+	output += _version + " " + sizeToString(static_cast<size_t>(_status_code)) + " " + _reason_phrase + "\r\n";
+	std::multimap<std::string, std::string>::const_iterator it;
+	for (it = _headers.begin(); it != _headers.end(); ++it)
+	{
+		output += it->first + ": " + it->second + "\r\n";
+	}
+	output += "\r\n";
+	return (output);
+}
+
+void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& error_file_path)
 {
 	setStatusCode(error_code);
-	std::string html = "<html>\r\n";
-				html += "<head>Error</head>\r\n";
-				html += "</html>\r\n";
-	_body = html;
+	_body.clear();
+	if (!error_file_path.empty())
+	{
+		std::ifstream file(error_file_path.c_str(), std::ios::in | std::ios::binary);
+		if (file.is_open())
+		{
+			char buffer[4096];
+			while (file.read(buffer, sizeof(buffer)))
+			{
+				_body.append(buffer, file.gcount());
+			}
+			if (file.gcount() > 0)
+			{
+				_body.append(buffer, file.gcount());
+			}
+			file.close();
+		}
+	}
+	if (_body.empty())
+	{
+		std::string error_str = sizeToString(error_code);
+		_body = "<html>\r\n";
+		_body += "<head><title>Error " + error_str + "</title></head>\r\n";
+        _body += "<center><h1>" + _reason_phrase + "</h1></center>\r\n";
+        _body += "</body>\r\n";
+        _body += "</html>\r\n";
+	}
 	addHeader("Content-Type", "text/html");
-	std::string length_str = sizeToString(_body.length());
-	addHeader("Content-Length", length_str);
+	addHeader("Content-Length", sizeToString(_body.length()));
 }
 
 void	HttpResponse::setBody(const std::string &body)
@@ -117,6 +155,7 @@ std::string HttpResponse::toString()
 	response_str += " ";
 	response_str += _reason_phrase;
 	response_str += "\r\n";
+	std::cout << "Response str before headers: " << response_str << "\n";
 
 	std::multimap<std::string, std::string>::iterator it;
 	for (it = _headers.begin(); it != _headers.end(); ++it)
@@ -128,5 +167,29 @@ std::string HttpResponse::toString()
 	}
 	response_str += "\r\n";
 	response_str += _body;
+	std::cout << "Response str after body: " << response_str << "\n";
 	return (response_str);
+}
+
+std::string HttpResponse::getMimeType(const std::string& path)
+{
+    size_t dotPos = path.find_last_of('.');
+    if (dotPos == std::string::npos)
+        return "text/plain"; 
+
+    std::string ext = path.substr(dotPos);
+
+    if (ext == ".html" || ext == ".htm") return "text/html";
+    if (ext == ".css") return "text/css";
+    if (ext == ".js") return "text/javascript";
+    
+    if (ext == ".png") return "image/png";
+    if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
+    if (ext == ".gif") return "image/gif";
+    if (ext == ".ico") return "image/x-icon";
+    
+    if (ext == ".mp4") return "video/mp4";
+    if (ext == ".mp3") return "audio/mpeg";
+
+    return "text/plain";
 }

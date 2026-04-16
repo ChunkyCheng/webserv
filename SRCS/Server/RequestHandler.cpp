@@ -1,5 +1,8 @@
 #include "RequestHandler.hpp"
 #include <cstdlib>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fstream>
 
 RequestHandler::RequestHandler(Server& server,
 std::string& req_buff, std::string& res_buff)
@@ -8,7 +11,9 @@ std::string& req_buff, std::string& res_buff)
 	_response_buff(res_buff),
 	_httpRequest(),
 	_req_state(REQ_READING_HEADERS),
-	_res_state(RES_HEADERS)
+	_res_state(RES_HEADERS),
+	_matchedLocation(NULL),
+	_isFileOpen(false)
 {
 }
 
@@ -33,12 +38,30 @@ bool	RequestHandler::checkRequestComplete(void) const
 
 void	RequestHandler::continueBuildResponse(void)
 {
-	if (_res_state == RES_HEADERS)
+	if (_res_state == RES_BODY)
 	{
-		_response_buff += _httpResponse.toString();
-		_response_buff += _httpResponse.getBody();
+		if (_isFileOpen)
+		{
+			char chunk[8192];
+			_fileInStream.read(chunk, sizeof(chunk));
+			std::streamsize bytesRead = _fileInStream.gcount();
+			if (bytesRead > 0)
+			{
+				_response_buff.append(chunk, bytesRead);
+			}
+			if (_fileInStream.eof() || _fileInStream.fail())
+			{
+				_fileInStream.close();
+				_isFileOpen = false;
+				_res_state = RES_FINISHED;
+			}
+		}
 	}
-	_res_state = RES_FINISHED;
+	else
+	{
+		_response_buff += _httpResponse.getBody();
+		_res_state = RES_FINISHED;
+	}
 }
 
 bool	RequestHandler::checkResponseComplete(void) const
@@ -94,44 +117,106 @@ void	RequestHandler::processReqData(void)
 	}
 }
 
-void	RequestHandler::buildResponseData(void)
+
+void    RequestHandler::buildResponseData(void)
 {
+	std::cout << "\n--- PHASE 3: FILE STREAMING ---" << std::endl;
+
+	std::string path = _httpRequest.getPath();
+	if (!path.empty())
+		_matchedLocation = matchLocation(path, _server.getLocations());
+
+	// Error Intercept
 	HttpStatus req_error = _httpRequest.getError();
 	if (req_error != NONE)
 	{
-		_httpResponse.setStatusCode(req_error);
-		_httpResponse.addHeader("Connection", "close");
-		_httpResponse.buildErrorPage(req_error);
-		return ;
+		_httpResponse.buildErrorPage(req_error, "");
+		_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
+		_res_state = RES_FINISHED;
+		return;
 	}
+
+	if (_matchedLocation == NULL)
+	{
+		_httpResponse.buildErrorPage(NOT_FOUND, "");
+		_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
+		_res_state = RES_FINISHED;
+		return;
+	}
+
 	std::string method = _httpRequest.getMethod();
-	std::string path = _httpRequest.getPath();
+	std::string physical_path = _matchedLocation->getRoot() + path;
+
 	if (method == "GET")
 	{
-		_httpResponse.setStatusCode(OK);
-		std::string dummy = "<html><body><h1>Hahaha GET</h1></body></html>";
-		_httpResponse.addHeader("Content-Type", "text/html");
-		std::ostringstream ss;
-		ss << dummy.length();
-		_httpResponse.addHeader("Content-Length", ss.str());
-		_httpResponse.setBody(dummy);
+		struct stat path_info;
+		
+		// 1. Check if path exists
+		if (stat(physical_path.c_str(), &path_info) == 0)
+		{
+			// 2. Check if it's a directory
+			if (S_ISDIR(path_info.st_mode))
+			{
+				if (physical_path[physical_path.length() - 1] != '/')
+					physical_path += '/';
+				
+				std::vector<std::string> index_files = _matchedLocation->getIndex();
+				if (!index_files.empty())
+				{
+					physical_path += index_files[0];
+				}
+				else
+				{
+					_httpResponse.buildErrorPage(NOT_FOUND, "");
+					_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
+					_res_state = RES_FINISHED;
+					return;
+				}
+			}
+		}
+		else
+		{
+			_httpResponse.buildErrorPage(NOT_FOUND, "");
+			_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
+			_res_state = RES_FINISHED;
+			return;
+		}
+
+		// 3. SAFE FILE OPENING ON THE PRIVATE MEMBER
+		std::cout << "Attempting to open file: " << physical_path << std::endl;
+		_fileInStream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
+
+		if (_fileInStream.is_open())
+		{
+			std::cout << "SUCCESS! File stream is open!" << std::endl;
+			_isFileOpen = true;
+			_httpResponse.setStatusCode(OK);
+
+			// Add basic headers so the browser knows what to do
+			std::string mimeType = _httpResponse.getMimeType(physical_path);
+   			_httpResponse.addHeader("Content-Type", mimeType);
+			_httpResponse.addHeader("Content-Length", _httpResponse.sizeToString(static_cast<size_t>(stat(physical_path.c_str(), &path_info) == 0 ? path_info.st_size : 0)));
+			_response_buff = _httpResponse.getFormattedHeaders();
+			_res_state = RES_BODY;
+		}
+		else
+		{
+			std::cout << "FAILED! File could not be opened." << std::endl;
+			_httpResponse.buildErrorPage(NOT_FOUND, "");
+			_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
+			_res_state = RES_FINISHED;
+		}
 	}
-	else if (method == "POST")
+}
+
+const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)
+{
+	for (size_t i = 0; i < location.size(); ++i)
 	{
-		_httpResponse.setStatusCode(OK);
-		std::string dummy = "<html><body><h1>Hahaha POST</h1></body></html>";
-		_httpResponse.addHeader("Content-Type", "text/html");
-		std::ostringstream ss;
-		ss << dummy.length();
-		_httpResponse.addHeader("Content-Length", ss.str());
-		_httpResponse.setBody(dummy);
+		if (request_uri.find(location[i].getPrefix()) == 0)
+		{
+			return &location[i];
+		}
 	}
-	else if (method == "DELETE")
-	{
-		_httpResponse.setStatusCode(NO_CONTENT);
-	}
-	else
-	{
-		_httpResponse.buildErrorPage(NOT_IMPLEMENTED);
-	}
+	return (NULL);
 }

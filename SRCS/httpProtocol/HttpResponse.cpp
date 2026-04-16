@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/16 15:59:12 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/16 18:17:45 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,14 @@ HttpResponse::HttpResponse()
 	: _version("HTTP/1.1"),
 	_status_code(NONE)
 {}
+
+void	HttpResponse::reset()
+{
+	_status_code = NONE;
+	_reason_phrase = "";
+	_headers.clear();
+	_body.clear();
+}
 
 HttpResponse::~HttpResponse() {}
 
@@ -193,3 +201,4 @@ std::string HttpResponse::getMimeType(const std::string& path)
 
     return "text/plain";
 }
+

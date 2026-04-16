@@ -21,15 +21,15 @@ RequestHandler::~RequestHandler(void)
 {
 }
 
-// void	RequestHandler::reset(void)
-// {
-// 	_req_state = REQ_READING_HEADERS;
-// 	_res_state = RES_HEADERS;
-// 	_httpRequest.reset();
-// 	_httpResponse.reset();
-// 	if (file_stream.is_open()) // <-- close any file stream that is left open, put in the std::ifstream  member variable
-// 		_file_stream.close();
-// }
+void	RequestHandler::reset(void)
+{
+	_req_state = REQ_READING_HEADERS;
+	_res_state = RES_HEADERS;
+	_httpRequest.reset();
+	_httpResponse.reset();
+	if (_fileInStream.is_open())
+		_fileInStream.close();
+}
 
 bool	RequestHandler::checkRequestComplete(void) const
 {
@@ -62,6 +62,7 @@ void	RequestHandler::continueBuildResponse(void)
 		_response_buff += _httpResponse.getBody();
 		_res_state = RES_FINISHED;
 	}
+	reset();
 }
 
 bool	RequestHandler::checkResponseComplete(void) const
@@ -170,6 +171,7 @@ void    RequestHandler::buildResponseData(void)
 					_httpResponse.buildErrorPage(NOT_FOUND, "");
 					_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
 					_res_state = RES_FINISHED;
+					reset();
 					return;
 				}
 			}
@@ -179,6 +181,7 @@ void    RequestHandler::buildResponseData(void)
 			_httpResponse.buildErrorPage(NOT_FOUND, "");
 			_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
 			_res_state = RES_FINISHED;
+			reset();
 			return;
 		}
 
@@ -205,6 +208,7 @@ void    RequestHandler::buildResponseData(void)
 			_httpResponse.buildErrorPage(NOT_FOUND, "");
 			_response_buff = _httpResponse.getFormattedHeaders() + _httpResponse.getBody();
 			_res_state = RES_FINISHED;
+			reset();
 		}
 	}
 }

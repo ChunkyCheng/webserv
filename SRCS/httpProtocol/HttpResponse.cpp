@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/16 18:17:45 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/16 19:38:06 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,6 +140,7 @@ void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& erro
         _body += "</body>\r\n";
         _body += "</html>\r\n";
 	}
+	addHeader("Connection", "close");
 	addHeader("Content-Type", "text/html");
 	addHeader("Content-Length", sizeToString(_body.length()));
 }

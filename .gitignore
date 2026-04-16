@@ -4,3 +4,4 @@ webserv
 !.gitignore
 OBJS/
 httpProtocol/request
+var/www/html/index.html

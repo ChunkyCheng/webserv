@@ -4,3 +4,5 @@ webserv
 !.gitignore
 OBJS/
 httpProtocol/request
+/var
+

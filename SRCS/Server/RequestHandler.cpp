@@ -13,7 +13,8 @@ std::string& req_buff, std::string& res_buff)
 	_req_state(REQ_READING_HEADERS),
 	_res_state(RES_HEADERS),
 	_matchedLocation(NULL),
-	_isFileOpen(false)
+	_isFileOpen(false),
+	_should_close_connection(false)
 {
 }
 
@@ -107,10 +108,15 @@ void	RequestHandler::processReqData(void)
 				break;
 
 			case REQ_ERROR:
-				// if (isFatalError(_httpRequest.getError())) If is error, clear off buffer?
-				// {
-				// 	_request_buff.clear();
-				// }
+				if (_httpRequest.hasFatalError())
+				{
+					_should_close_connection = true;
+					_request_buff.clear();
+				}
+				else if (!_httpRequest.wantsKeepAlive())
+				{
+					_should_close_connection = true;
+				}
 				keep_processing = false;
 				break;
 		}

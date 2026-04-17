@@ -56,6 +56,7 @@ class	RequestHandler
 		std::ifstream	_fileInStream;
 		std::ofstream	_fileOutStream;
 		bool			_isFileOpen;
+		bool			_should_close_connection;
 };
 
 #endif

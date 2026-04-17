@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/12 21:16:35 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/17 20:47:25 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,8 @@
 HttpRequest::HttpRequest()
 	: _error_code(NONE),
 	_content_length(0),
-	_is_chunked(false)
+	_is_chunked(false),
+	_keep_alive(true)
 {}
 
 HttpRequest::~HttpRequest() {}
@@ -39,6 +40,44 @@ const std::string& HttpRequest::getVersion() const
 std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
 	return (_headers);
+}
+
+bool	HttpRequest::hasBody() const
+{
+	if (_headers.find("content-length") != _headers.end())
+		return (true);
+	if (_headers.find("transfer-encoding") != _headers.end())
+		return (true);
+	return (false);
+}
+
+bool	HttpRequest::hasError() const
+{
+	if (_error_code != NONE)
+		return (true);
+	else
+		return (false);
+}
+
+HttpStatus	HttpRequest::getError() const
+{
+	return (_error_code);
+}
+
+bool	HttpRequest::hasFatalError() const
+{
+	if (_error_code == BAD_REQUEST ||
+		_error_code == PAYLOAD_TOO_LARGE ||
+		_error_code == NOT_IMPLEMENTED)
+	{
+		return (true);
+	}
+	return (false);
+}
+
+bool	HttpRequest::wantsKeepAlive() const
+{
+	return (_keep_alive);
 }
 
 bool	HttpRequest::parseHeaders(std::string &req_buff)
@@ -81,17 +120,31 @@ bool	HttpRequest::tokenizeAndParse(std::string& raw_headers)
 		}
 		else if (!line.empty())
 		{
-			if (!parseHeaderLine(line))
-			{
-				return (false);
-			}
 			if (line[0] == ' ' || line[0] == '\t')
 			{
 				_error_code = BAD_REQUEST;
 				return (false);
 			}
+			if (!parseHeaderLine(line))
+			{
+				return (false);
+			}
 		}
 		pos = end + 2;
+	}
+	std::map<std::string, std::string>::iterator host_it = _headers.find("host");
+	if (host_it == _headers.end())
+	{
+		_error_code = BAD_REQUEST;
+		return (false);
+	}
+	std::map<std::string, std::string>::iterator conn_it = _headers.find("connection");
+	if (conn_it != _headers.end())
+	{
+		if (conn_it->second.find("close") != std::string::npos)
+		{
+			_keep_alive = false;
+		}
 	}
 	return (true);
 }
@@ -122,7 +175,14 @@ bool	HttpRequest::parseRequestLine(std::string& line)
 	_method = line.substr(0, sp1);
 	_path = line.substr(sp1 + 1, sp2 - sp1 - 1);
 	_version = line.substr(sp2 + 1);
-	// Need to see if any whitespace in path, not implemented yet
+	for (size_t i = 0; i < _path.length(); ++i)
+	{
+		if (_path[i] == ' ' || _path[i] == '\t')
+		{
+			_error_code = BAD_REQUEST;
+			return (false);
+		}
+	}
 	if (_method.empty() || _path.empty() || _version.empty())
 	{
 		_error_code = BAD_REQUEST;
@@ -200,32 +260,8 @@ bool	HttpRequest::parseBody(std::string& req_buff)
 	}
 }
 
-
-bool	HttpRequest::hasBody()
-{
-	if (_headers.find("content-length") != _headers.end())
-		return (true);
-	if (_headers.find("transfer-encoding") != _headers.end())
-		return (true);
-	return (false);
-}
-
-bool	HttpRequest::hasError()
-{
-	if (_error_code != NONE)
-		return (true);
-	else
-		return (false);
-}
-
-HttpStatus	HttpRequest::getError() const
-{
-	return (_error_code);
-}
-
 bool	HttpRequest::setupBodyType()
 {
-	// Transfer Encoding and Content length cannot exist at the same time
 	bool	has_te = (_headers.find("transfer-encoding") != _headers.end());
 	bool	has_cl = (_headers.find("content-length") != _headers.end());
 
@@ -236,11 +272,11 @@ bool	HttpRequest::setupBodyType()
 	}
 	if (has_te)
 	{
-		if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
-		{
-			_is_chunked = true;
-			return (true);
-		}
+		// if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
+		// {
+		// 	_is_chunked = true;
+		// 	return (true);
+		// }
 		_error_code = NOT_IMPLEMENTED;
 		return (false);
 	}
@@ -274,4 +310,6 @@ void	HttpRequest::reset()
 	_body.clear();
 	_content_length = 0;
 	_error_code = NONE;
+	_is_chunked = false;
+	_keep_alive = true;
 }

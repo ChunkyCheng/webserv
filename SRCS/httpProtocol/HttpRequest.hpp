@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/09 16:19:14 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/17 18:35:49 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ class HttpRequest
 		std::string 						_body; // After the empty line \r\n\r\n, whatever is left is the Body.
 		size_t								_content_length;
 		bool								_is_chunked;
+		bool								_keep_alive;
 
 		bool	tokenizeAndParse(std::string& raw_headers);
 		bool	parseRequestLine(std::string& line);
@@ -53,8 +54,10 @@ class HttpRequest
 		bool	parseBody(std::string& req_buff);
 		void	reset();
 
-		bool	hasError();
-		bool	hasBody();
+		bool	hasError() const;
+		bool	hasBody() const;
+		bool	hasFatalError() const;
+		bool	wantsKeepAlive() const;
 
 		HttpStatus							getError() const;
 		const std::string& 					getMethod() const;

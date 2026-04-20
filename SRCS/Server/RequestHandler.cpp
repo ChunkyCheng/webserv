@@ -63,7 +63,6 @@ void	RequestHandler::continueBuildResponse(void)
 		_response_buff += _httpResponse.getBody();
 		_res_state = RES_FINISHED;
 	}
-	reset();
 }
 
 bool	RequestHandler::checkResponseComplete(void) const
@@ -127,7 +126,11 @@ void	RequestHandler::processReqData(void)
 
 void    RequestHandler::buildResponseData(void)
 {
-	
+	if (_httpRequest.hasFatalError())
+	{
+		int error_code = _httpRequest.getError();
+		buildFatalError(error_code);
+	}
 }
 
 const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)

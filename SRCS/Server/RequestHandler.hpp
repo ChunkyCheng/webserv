@@ -41,7 +41,7 @@ class	RequestHandler
 		bool			checkResponseComplete(void) const;
 		void			processReqData(void);
 		void			buildResponseData(void);
-		void			reset();
+		void			reset(void);
 
 	protected:
 	private:

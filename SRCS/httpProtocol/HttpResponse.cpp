@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/16 19:38:06 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/20 17:51:13 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,27 +110,17 @@ std::string HttpResponse::getFormattedHeaders() const
 	return (output);
 }
 
-void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& error_file_path)
+const std::string& HttpResponse::getReasonPhrase() const
+{
+	return (_reason_phrase);
+}
+
+
+void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body_content)
 {
 	setStatusCode(error_code);
 	_body.clear();
-	if (!error_file_path.empty())
-	{
-		std::ifstream file(error_file_path.c_str(), std::ios::in | std::ios::binary);
-		if (file.is_open())
-		{
-			char buffer[4096];
-			while (file.read(buffer, sizeof(buffer)))
-			{
-				_body.append(buffer, file.gcount());
-			}
-			if (file.gcount() > 0)
-			{
-				_body.append(buffer, file.gcount());
-			}
-			file.close();
-		}
-	}
+
 	if (_body.empty())
 	{
 		std::string error_str = sizeToString(error_code);
@@ -140,7 +130,6 @@ void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& erro
         _body += "</body>\r\n";
         _body += "</html>\r\n";
 	}
-	addHeader("Connection", "close");
 	addHeader("Content-Type", "text/html");
 	addHeader("Content-Length", sizeToString(_body.length()));
 }

@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/16 18:15:32 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/20 17:50:10 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,13 +43,14 @@ class HttpResponse
 		void		addHeader(const std::string& key, const std::string& value);
 		void		appendHeader(const std::string& key, const std::string& value);
 
+		const std::string&	getReasonPhrase() const;
 		std::string			getFormattedHeaders() const;
 		const std::string&	getBody() const;
 		std::string			getMimeType(const std::string& path);
 
 		void				setBody(const std::string& body);
 
-		void				buildErrorPage(HttpStatus error_code, const std::string& error_file_path);
+		void				buildErrorPage(HttpStatus error_code, const std::string& body_content);
 		std::string			sizeToString(size_t number) const;
 		std::string			toString();
 		void				reset();

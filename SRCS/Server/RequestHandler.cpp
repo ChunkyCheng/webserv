@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fstream>
+#include <sstream>
 
 RequestHandler::RequestHandler(Server& server,
 std::string& req_buff, std::string& res_buff)
@@ -123,13 +124,56 @@ void	RequestHandler::processReqData(void)
 	}
 }
 
+bool	RequestHandler::readFileContent(const std::string& file_path, std::string& out_content)
+{
+	std::ifstream file(file_path.c_str());
+	if (!file.is_open())
+	{
+		return (false);
+	}
+	std::ostringstream ss;
+	ss << file.rdbuf();
+	out_content = ss.str();
+	return (true);
+}
+
+std::string RequestHandler::buildDefaultErrorHtml(HttpStatus error_code)
+{
+	std::ostringstream ss;
+	ss << "<html>\r\n";
+	ss << "<head><title>Error " << error_code << "</title></head>\r\n";
+	ss << "<body>\r\n";
+	ss << "<h1>" << error_code << " " << _httpResponse.getReasonPhrase() << "</h1>\r\n";
+	ss << "</body>\r\n";
+	ss << "</html>\r\n";
+	return (ss.str());
+}
+
+std::string getErrorPagePath(HttpStatus error_code)
+{
+
+}
 
 void    RequestHandler::buildResponseData(void)
 {
-	if (_httpRequest.hasFatalError())
+	if (_httpRequest.hasError())
 	{
-		int error_code = _httpRequest.getError();
-		buildFatalError(error_code);
+		HttpStatus error_code = _httpRequest.getError();
+		std::string body_content;
+		std::string error_file_path = getErrorPagePath(error_code);
+		if (!readFileContent(error_file_path, body_content))
+		{
+			body_content = buildDefaultErrorHtml(error_code);
+		}
+		_httpResponse.buildErrorPage(error_code, body_content);
+		if (_httpRequest.hasFatalError())
+		{
+			_httpResponse.addHeader("Connection", "close");
+		}
+	}
+	else
+	{
+		_httpResponse.buildNormalResponse();
 	}
 }
 

@@ -13,7 +13,7 @@ std::string& req_buff, std::string& res_buff)
 	_httpRequest(),
 	_req_state(REQ_READING_HEADERS),
 	_res_state(RES_HEADERS),
-	_matchedLocation(NULL),
+	_location(NULL),
 	_isFileOpen(false),
 	_should_close_connection(false)
 {
@@ -83,6 +83,9 @@ void	RequestHandler::processReqData(void)
 			case REQ_READING_HEADERS:
 				if (_httpRequest.parseHeaders(_request_buff))
 				{
+					std::string uri = _httpRequest.getPath();
+					const std::vector<Location>& bookshelf = _server.getLocations();
+					_location = matchLocation(uri, bookshelf);
 					_req_state = _httpRequest.hasBody() ? REQ_READING_BODY : REQ_COMPLETE;
 				}
 				else
@@ -151,7 +154,7 @@ std::string RequestHandler::buildDefaultErrorHtml(HttpStatus error_code)
 
 std::string getErrorPagePath(HttpStatus error_code)
 {
-
+	std::string path = 
 }
 
 void    RequestHandler::buildResponseData(void)

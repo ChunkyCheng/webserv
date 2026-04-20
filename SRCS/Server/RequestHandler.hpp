@@ -54,9 +54,7 @@ class	RequestHandler
 		HttpResponse	_httpResponse;
 		RequestState	_req_state;
 		ResponseState	_res_state;
-		const Location*		_matchedLocation;
-		std::ifstream	_fileInStream;
-		std::ofstream	_fileOutStream;
+		const Location*	_location;
 		bool			_isFileOpen;
 		bool			_should_close_connection;
 };

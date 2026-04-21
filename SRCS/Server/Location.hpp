@@ -11,6 +11,8 @@ class	Location
 		Location(const Location& other);
 		Location&	operator=(const Location& other);
 		~Location(void);
+
+		bool	isMethodAllowed(const std::string& method) const;
 	private:
 		Location(void);
 

@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/17 20:47:25 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/21 18:54:26 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,11 @@ std::map<std::string, std::string> HttpRequest::getHeaders() const
 	return (_headers);
 }
 
+size_t	HttpRequest::getContentLength() const
+{
+	return (_content_length);
+}
+
 bool	HttpRequest::hasBody() const
 {
 	if (_headers.find("content-length") != _headers.end())
@@ -62,17 +67,6 @@ bool	HttpRequest::hasError() const
 HttpStatus	HttpRequest::getError() const
 {
 	return (_error_code);
-}
-
-bool	HttpRequest::hasFatalError() const
-{
-	if (_error_code == BAD_REQUEST ||
-		_error_code == PAYLOAD_TOO_LARGE ||
-		_error_code == NOT_IMPLEMENTED)
-	{
-		return (true);
-	}
-	return (false);
 }
 
 bool	HttpRequest::wantsKeepAlive() const

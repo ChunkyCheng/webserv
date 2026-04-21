@@ -6,6 +6,7 @@
 #include "Location.hpp"
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
+#include "../httpProtocol/HttpStatus.hpp"
 
 enum ResponseState
 {
@@ -54,9 +55,10 @@ class	RequestHandler
 		HttpResponse	_httpResponse;
 		RequestState	_req_state;
 		ResponseState	_res_state;
+		HttpStatus		_handler_error_code;
 		const Location*	_location;
-		bool			_isFileOpen;
 		bool			_should_close_connection;
+
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/20 17:51:13 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/21 02:13:32 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,15 +120,15 @@ void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body
 {
 	setStatusCode(error_code);
 	_body.clear();
-
+	_body = body_content;
 	if (_body.empty())
 	{
 		std::string error_str = sizeToString(error_code);
 		_body = "<html>\r\n";
 		_body += "<head><title>Error " + error_str + "</title></head>\r\n";
-        _body += "<center><h1>" + _reason_phrase + "</h1></center>\r\n";
-        _body += "</body>\r\n";
-        _body += "</html>\r\n";
+		_body += "<center><h1>" + _reason_phrase + "</h1></center>\r\n";
+		_body += "</body>\r\n";
+		_body += "</html>\r\n";
 	}
 	addHeader("Content-Type", "text/html");
 	addHeader("Content-Length", sizeToString(_body.length()));
@@ -171,24 +171,24 @@ std::string HttpResponse::toString()
 
 std::string HttpResponse::getMimeType(const std::string& path)
 {
-    size_t dotPos = path.find_last_of('.');
-    if (dotPos == std::string::npos)
-        return "text/plain"; 
+	size_t dotPos = path.find_last_of('.');
+	if (dotPos == std::string::npos)
+		return "text/plain"; 
 
-    std::string ext = path.substr(dotPos);
+	std::string ext = path.substr(dotPos);
 
-    if (ext == ".html" || ext == ".htm") return "text/html";
-    if (ext == ".css") return "text/css";
-    if (ext == ".js") return "text/javascript";
-    
-    if (ext == ".png") return "image/png";
-    if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
-    if (ext == ".gif") return "image/gif";
-    if (ext == ".ico") return "image/x-icon";
-    
-    if (ext == ".mp4") return "video/mp4";
-    if (ext == ".mp3") return "audio/mpeg";
+	if (ext == ".html" || ext == ".htm") return "text/html";
+	if (ext == ".css") return "text/css";
+	if (ext == ".js") return "text/javascript";
+	
+	if (ext == ".png") return "image/png";
+	if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
+	if (ext == ".gif") return "image/gif";
+	if (ext == ".ico") return "image/x-icon";
+	
+	if (ext == ".mp4") return "video/mp4";
+	if (ext == ".mp3") return "audio/mpeg";
 
-    return "text/plain";
+	return "text/plain";
 }
 

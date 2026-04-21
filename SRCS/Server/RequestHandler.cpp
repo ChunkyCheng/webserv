@@ -152,9 +152,39 @@ std::string RequestHandler::buildDefaultErrorHtml(HttpStatus error_code)
 	return (ss.str());
 }
 
-std::string getErrorPagePath(HttpStatus error_code)
+std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 {
-	std::string path = 
+	const Location* target_location = _location;
+	if (!target_location)
+	{
+		target_location = getDefaultLocation();
+	}
+	if (!target_location)
+	{
+		return ("");
+	}
+	const std::map<int, std::string>& error_pages = target_location->getErrorPages();
+	std::map<int, std::string>::const_iterator it = error_pages.find(error_code);
+	if (it == error_pages.end())
+	{
+		return ("");
+	}
+	std::string custom_path = it->second;
+	std::string root = target_location->getRoot();
+	if (!root.empty() && root[root.length() - 1] != '/' && !custom_path.empty() && custom_path[0] != '/')
+	{
+		root += "/";
+	}
+	std::string full_path = root + custom_path;
+	struct stat file_stat;
+	if (stat(full_path.c_str(), &file_stat) == 0)
+	{
+		if (S_ISREG(file_stat.st_mode))
+		{
+			return (full_path);
+		}
+	}
+	return ("");
 }
 
 void    RequestHandler::buildResponseData(void)

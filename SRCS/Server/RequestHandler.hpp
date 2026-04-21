@@ -35,6 +35,7 @@ class	RequestHandler
 		const Location*	matchLocation(const std::string& request_uri, const std::vector<Location>& location);
 		bool			readFileContent(const std::string &file_path, std::string& out_content);
 		std::string		buildDefaultErrorHtml(HttpStatus error_code);
+		std::string		getErrorPagePath(HttpStatus error_code);
 
 	public:
 		// RequestState	getState() const;

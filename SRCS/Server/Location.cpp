@@ -80,6 +80,17 @@ const std::map<int, std::string>&	Location::getErrorPages(void) const
 	return (_config.error_pages);
 }
 
+bool	Location::isMethodAllowed(const std::string& method) const
+{
+	if (method == "GET")
+		return isGet();
+	if (method == "POST")
+		return isPost();
+	if (method == "DELETE")
+		return isDelete();
+	return (false);
+}
+
 std::ostream&	operator<<(std::ostream& os, const Location& obj)
 {
 	os << "Prefix: " << obj.getPrefix() << "\n";

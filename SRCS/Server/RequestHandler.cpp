@@ -13,8 +13,8 @@ std::string& req_buff, std::string& res_buff)
 	_httpRequest(),
 	_req_state(REQ_READING_HEADERS),
 	_res_state(RES_HEADERS),
+	_handler_error_code(NONE),
 	_location(NULL),
-	_isFileOpen(false),
 	_should_close_connection(false)
 {
 }
@@ -29,8 +29,6 @@ void	RequestHandler::reset(void)
 	_res_state = RES_HEADERS;
 	_httpRequest.reset();
 	_httpResponse.reset();
-	if (_fileInStream.is_open())
-		_fileInStream.close();
 }
 
 bool	RequestHandler::checkRequestComplete(void) const
@@ -42,27 +40,7 @@ void	RequestHandler::continueBuildResponse(void)
 {
 	if (_res_state == RES_BODY)
 	{
-		if (_isFileOpen)
-		{
-			char chunk[8192];
-			_fileInStream.read(chunk, sizeof(chunk));
-			std::streamsize bytesRead = _fileInStream.gcount();
-			if (bytesRead > 0)
-			{
-				_response_buff.append(chunk, bytesRead);
-			}
-			if (_fileInStream.eof() || _fileInStream.fail())
-			{
-				_fileInStream.close();
-				_isFileOpen = false;
-				_res_state = RES_FINISHED;
-			}
-		}
-	}
-	else
-	{
-		_response_buff += _httpResponse.getBody();
-		_res_state = RES_FINISHED;
+
 	}
 }
 
@@ -86,7 +64,28 @@ void	RequestHandler::processReqData(void)
 					std::string uri = _httpRequest.getPath();
 					const std::vector<Location>& bookshelf = _server.getLocations();
 					_location = matchLocation(uri, bookshelf);
-					_req_state = _httpRequest.hasBody() ? REQ_READING_BODY : REQ_COMPLETE;
+					if (!_location)
+					{
+						_handler_error_code = NOT_FOUND;
+						_req_state = REQ_ERROR;
+					}
+					else if (!_location->isMethodAllowed(_httpRequest.getMethod()))
+					{
+						_handler_error_code = METHOD_NOT_ALLOWED;
+						_req_state = REQ_ERROR;
+					}
+					else if (_httpRequest.hasBody() && _httpRequest.getContentLength() > _location->getClientMaxBodySize())
+					{
+							_handler_error_code = PAYLOAD_TOO_LARGE;
+							_req_state = REQ_ERROR;
+					}
+					else
+					{
+						if (_httpRequest.hasBody())
+							_req_state = REQ_READING_BODY;
+						else
+							_req_state = REQ_COMPLETE;
+					}
 				}
 				else
 				{
@@ -112,14 +111,10 @@ void	RequestHandler::processReqData(void)
 				break;
 
 			case REQ_ERROR:
-				if (_httpRequest.hasFatalError())
+				if (_httpRequest.hasError() || _handler_error_code == PAYLOAD_TOO_LARGE)
 				{
 					_should_close_connection = true;
 					_request_buff.clear();
-				}
-				else if (!_httpRequest.wantsKeepAlive())
-				{
-					_should_close_connection = true;
 				}
 				keep_processing = false;
 				break;
@@ -189,25 +184,38 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 
 void    RequestHandler::buildResponseData(void)
 {
+	HttpStatus final_error = NONE;
+
 	if (_httpRequest.hasError())
 	{
-		HttpStatus error_code = _httpRequest.getError();
+		final_error = _httpRequest.getError();
+	}
+	else if (_handler_error_code == PAYLOAD_TOO_LARGE)
+	{
+		final_error = _handler_error_code;
+	}
+	if (!_httpRequest.wantsKeepAlive() ||
+		_httpRequest.hasError() ||
+		final_error == PAYLOAD_TOO_LARGE)
+	{
+		_should_close_connection = true;
+	}
+	if (final_error != NONE)
+	{
 		std::string body_content;
-		std::string error_file_path = getErrorPagePath(error_code);
+		std::string error_file_path = getErrorPagePath(final_error);
 		if (!readFileContent(error_file_path, body_content))
 		{
-			body_content = buildDefaultErrorHtml(error_code);
+			body_content = buildDefaultErrorHtml(final_error);
 		}
-		_httpResponse.buildErrorPage(error_code, body_content);
-		if (_httpRequest.hasFatalError())
-		{
-			_httpResponse.addHeader("Connection", "close");
-		}
+		_httpResponse.buildErrorPage(final_error, body_content);
 	}
 	else
 	{
 		_httpResponse.buildNormalResponse();
 	}
+	if (_httpRequest.hasError() || final_error == PAYLOAD_TOO_LARGE)
+		_httpResponse.addHeader("Connection", "close");
 }
 
 const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)

@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/21 02:13:32 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/23 01:43:42 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,12 @@
 
 HttpResponse::HttpResponse()
 	: _version("HTTP/1.1"),
-	_status_code(NONE)
+	_status_code(OK)
 {}
 
 void	HttpResponse::reset()
 {
-	_status_code = NONE;
+	_status_code = OK;
 	_reason_phrase = "";
 	_headers.clear();
 	_body.clear();
@@ -115,6 +115,12 @@ const std::string& HttpResponse::getReasonPhrase() const
 	return (_reason_phrase);
 }
 
+void	HttpResponse::buildNormalHeaders(std::streamsize file_size, const std::string& physical_path)
+{
+	setStatusCode(OK);
+	addHeader("Content-Type", getMimeType(physical_path));
+	addHeader("Content-Length", sizeToString(file_size));
+}
 
 void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body_content)
 {
@@ -126,7 +132,7 @@ void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body
 		std::string error_str = sizeToString(error_code);
 		_body = "<html>\r\n";
 		_body += "<head><title>Error " + error_str + "</title></head>\r\n";
-		_body += "<center><h1>" + _reason_phrase + "</h1></center>\r\n";
+		_body += "<center><h1>Error " + error_str + _reason_phrase + "</h1></center>\r\n";
 		_body += "</body>\r\n";
 		_body += "</html>\r\n";
 	}

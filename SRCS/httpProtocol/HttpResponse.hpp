@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/20 17:50:10 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/23 01:40:51 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,6 +51,7 @@ class HttpResponse
 		void				setBody(const std::string& body);
 
 		void				buildErrorPage(HttpStatus error_code, const std::string& body_content);
+		void				buildNormalHeaders(std::streamsize file_size, const std::string& physical_path);
 		std::string			sizeToString(size_t number) const;
 		std::string			toString();
 		void				reset();

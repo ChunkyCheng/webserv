@@ -12,6 +12,7 @@ enum ResponseState
 {
 	RES_HEADERS,
 	RES_BODY,
+	RES_CGI_BODY,
 	RES_FINISHED
 };
 
@@ -19,6 +20,7 @@ enum RequestState
 {
 	REQ_READING_HEADERS,
 	REQ_READING_BODY,
+	REQ_CGI_BODY,
 	REQ_COMPLETE,
 	REQ_ERROR
 };
@@ -35,8 +37,10 @@ class	RequestHandler
 
 		const Location*	matchLocation(const std::string& request_uri, const std::vector<Location>& location);
 		bool			readFileContent(const std::string &file_path, std::string& out_content);
-		std::string		buildDefaultErrorHtml(HttpStatus error_code);
 		std::string		getErrorPagePath(HttpStatus error_code);
+		const Location* getDefaultLocation(void) const;
+		std::string		getNormalPagePath(void);
+
 
 	public:
 		// RequestState	getState() const;
@@ -59,6 +63,7 @@ class	RequestHandler
 		HttpStatus		_handler_error_code;
 		const Location*	_location;
 		bool			_should_close_connection;
+		std::ifstream	_file_stream;
 
 };
 

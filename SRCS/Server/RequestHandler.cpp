@@ -46,6 +46,8 @@ bool	RequestHandler::checkRequestComplete(void) const
 
 void	RequestHandler::continueBuildResponse(void)
 {
+	if (_response_buff.size() > 16384)
+		return;
 	if (_res_state == RES_HEADERS)
 	{
 		_res_state = RES_BODY;
@@ -53,12 +55,30 @@ void	RequestHandler::continueBuildResponse(void)
 	if (_res_state == RES_BODY)
 	{
 		char buffer[8192];
-		_file_stream.read(buffer, sizeof(buffer));
-		_response_buff.append(buffer, _file_stream.gcount());
-		if (_file_stream.eof())
+		if (_file_stream.is_open())
 		{
-			_file_stream.close();
+			_file_stream.read(buffer, sizeof(buffer));
+			std::streamsize bytes_read = _file_stream.gcount();
+			if (bytes_read > 0)
+			{
+				_response_buff.append(buffer, bytes_read);
+			}
+			if (_file_stream.bad())
+			{
+				_file_stream.close();
+				_should_close_connection = true;
+				_res_state = RES_FINISHED;
+			}
+			else if (_file_stream.eof())
+			{
+				_file_stream.close();
+				_res_state = RES_FINISHED;
+			}
+		}
+		else
+		{
 			_res_state = RES_FINISHED;
+			_should_close_connection = true;
 		}
 ;	}
 	// else if (_res_state == RES_CGI_BODY)
@@ -90,6 +110,11 @@ void	RequestHandler::processReqData(void)
 					if (!_location)
 					{
 						_handler_error_code = NOT_FOUND;
+						_req_state = REQ_ERROR;
+					}
+					else if (_location->getReturnCode() != 0)
+					{
+						_handler_error_code = static_cast<HttpStatus>(_location->getReturnCode());
 						_req_state = REQ_ERROR;
 					}
 					else if (!_location->isMethodAllowed(_httpRequest.getMethod()))
@@ -252,6 +277,7 @@ void    RequestHandler::buildResponseData(void)
 	if (final_error == NONE)
 	{
 		physical_path = getNormalPagePath();
+	
 		method = _httpRequest.getMethod();
 		if (method == "GET")
 		{
@@ -269,31 +295,65 @@ void    RequestHandler::buildResponseData(void)
 		{
 			final_error = METHOD_NOT_ALLOWED;
 		}
-		// _file_stream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
-		// if (!_file_stream.is_open())
-		// {
-		// 	final_error = INTERNAL_SERVER_ERROR;
-		// }
-		// else
-		// {
-		// 	_file_stream.seekg(0, std::ios::end);
-		// 	std::streamsize file_size = _file_stream.tellg();
-		// 	_file_stream.seekg(0, std::ios::beg);
-		// 	_httpResponse.buildNormalHeaders(file_size, physical_path);
-		// }
 	}
 	if (final_error != NONE)
 	{
-		body_content.clear();
-		physical_path = getErrorPagePath(final_error);
-		readFileContent(physical_path, body_content);
-		_httpResponse.buildErrorPage(final_error, body_content);
+		if (final_error == MOVED_PERMANENTLY ||
+			final_error == FOUND ||
+			final_error == SEE_OTHER ||
+			final_error == TEMPORARY_REDIRECT ||
+			final_error == PERMANENT_REDIRECT)
+		{
+			std::string target = _location->getReturnTarget();
+			_httpResponse.buildRedirectHeaders(target, final_error);
+		}
+		else
+		{
+			body_content.clear();
+			physical_path = getErrorPagePath(final_error);
+			readFileContent(physical_path, body_content);
+			_httpResponse.buildErrorPage(final_error, body_content);
+		}
 	}
 	if (_should_close_connection)
 		_httpResponse.addHeader("Connection", "close");
 	else
 		_httpResponse.addHeader("Connection", "keep-alive");
 	_response_buff = _httpResponse.getFormattedHeaders();
+}
+
+void RequestHandler::handleGetMethod(const std::string& physical_path)
+{
+	struct stat file_stat;
+	if (stat(physical_path.c_str(), &file_stat) != 0)
+	{
+		_handler_error_code = NOT_FOUND;
+		return;
+	}
+	if (access(physical_path.c_str(), R_OK) != 0)
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+	if (S_ISDIR(file_stat.st_mode))
+	{
+
+	}
+	else if (S_ISREG(file_stat.st_mode))
+	{
+		_file_stream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
+		if (!_file_stream.is_open())
+		{
+			_handler_error_code = FORBIDDEN;
+			return;
+		}
+		_httpResponse.buildNormalHeaders(physical_path, file_stat.st_size);
+		_response_buff = _httpResponse.getFormattedHeaders();
+	}
+	else
+	{
+
+	}
 }
 
 const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)

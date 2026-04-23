@@ -40,6 +40,7 @@ class	RequestHandler
 		std::string		getErrorPagePath(HttpStatus error_code);
 		const Location* getDefaultLocation(void) const;
 		std::string		getNormalPagePath(void);
+		void			handleGetMethod(const std::string& physical_path);
 
 
 	public:

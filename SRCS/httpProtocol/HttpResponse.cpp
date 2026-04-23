@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/23 01:43:42 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/23 23:40:08 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,12 @@
 
 HttpResponse::HttpResponse()
 	: _version("HTTP/1.1"),
-	_status_code(OK)
+	_status_code(NONE)
 {}
 
 void	HttpResponse::reset()
 {
-	_status_code = OK;
+	_status_code = NONE;
 	_reason_phrase = "";
 	_headers.clear();
 	_body.clear();
@@ -39,17 +39,44 @@ void	HttpResponse::setStatusCode(HttpStatus status_code)
 		case NO_CONTENT:
 			_reason_phrase = "No Content";
 			break;
+		case MOVED_PERMANENTLY:
+			_reason_phrase = "Moved Permanently";
+			break;
+		case FOUND:
+			_reason_phrase = "Found";
+			break;
+		case SEE_OTHER:
+			_reason_phrase = "See Other";
+			break;
+		case TEMPORARY_REDIRECT:
+			_reason_phrase = "Temporary Redirect";
+			break;
+		case PERMANENT_REDIRECT:
+			_reason_phrase = "Permanent Redirect";
+			break;
 		case BAD_REQUEST:
 			_reason_phrase = "Bad Request";
 			break;
+		case FORBIDDEN:
+			_reason_phrase = "Forbidden";
+			break;
 		case NOT_FOUND:
 			_reason_phrase = "Not Found";
+			break;
+		case METHOD_NOT_ALLOWED:
+			_reason_phrase = "Method Not Allowed";
+			break;
+		case PAYLOAD_TOO_LARGE:
+			_reason_phrase = "Payload Too Large";
 			break;
 		case INTERNAL_SERVER_ERROR:
 			_reason_phrase = "Internal Server Error";
 			break;
 		case NOT_IMPLEMENTED:
 			_reason_phrase = "Not Implemented";
+			break;
+		case HTTP_VERSION_NOT_SUPPORTED:
+			_reason_phrase = "HTTP Version Not Supported";
 			break;
 		default:
 			_status_code = INTERNAL_SERVER_ERROR;
@@ -122,6 +149,13 @@ void	HttpResponse::buildNormalHeaders(std::streamsize file_size, const std::stri
 	addHeader("Content-Length", sizeToString(file_size));
 }
 
+void	HttpResponse::buildRedirectHeaders(const std::string& target, HttpStatus code)
+{
+		setStatusCode(code);
+		addHeader("Location", target);
+		addHeader("Content-Length", "0");
+}
+
 void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body_content)
 {
 	setStatusCode(error_code);
@@ -150,7 +184,7 @@ const std::string& HttpResponse::getBody() const
 	return (_body);
 }
 
-std::string HttpResponse::toString()
+std::string HttpResponse::headerToString()
 {
 	std::string response_str = "";
 	response_str += _version;
@@ -170,7 +204,6 @@ std::string HttpResponse::toString()
 		response_str += "\r\n";
 	}
 	response_str += "\r\n";
-	response_str += _body;
 	std::cout << "Response str after body: " << response_str << "\n";
 	return (response_str);
 }

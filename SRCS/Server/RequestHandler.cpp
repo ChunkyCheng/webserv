@@ -105,6 +105,7 @@ void	RequestHandler::processReqData(void)
 				if (_httpRequest.parseHeaders(_request_buff))
 				{
 					std::string uri = _httpRequest.getPath();
+					std::cout << "PATH: " << uri << "\n";
 					const std::vector<Location>& bookshelf = _server.getLocations();
 					_location = matchLocation(uri, bookshelf);
 					if (!_location)
@@ -142,6 +143,7 @@ void	RequestHandler::processReqData(void)
 					else
 						keep_processing = false;
 				}
+				std::cout << "REQ STATE BEFORE LEAVING PARSE HEADER " << _req_state << " " << "Handler code: " << _handler_error_code << "Req code: " << "\n";
 				break;
 
 			case REQ_READING_BODY:
@@ -277,20 +279,19 @@ void    RequestHandler::buildResponseData(void)
 	if (final_error == NONE)
 	{
 		physical_path = getNormalPagePath();
-	
 		method = _httpRequest.getMethod();
 		if (method == "GET")
 		{
 			handleGetMethod(physical_path);
 		}
-		else if (method == "POST")
-		{
-			handlePostMethod(physical_path);
-		}
-		else if (method == "DELETE")
-		{
-			handleDeleteMethod(physical_path);
-		}
+		// else if (method == "POST")
+		// {
+		// 	handlePostMethod(physical_path);
+		// }
+		// else if (method == "DELETE")
+		// {
+		// 	handleDeleteMethod(physical_path);
+		// }
 		else
 		{
 			final_error = METHOD_NOT_ALLOWED;
@@ -320,7 +321,13 @@ void    RequestHandler::buildResponseData(void)
 	else
 		_httpResponse.addHeader("Connection", "keep-alive");
 	_response_buff = _httpResponse.getFormattedHeaders();
+	std::cout << "Handler after response: " << _handler_error_code << " Request code after response " << _httpRequest.getError() << " Response code after response " << _httpResponse.getReasonPhrase() << "\n";
 }
+
+// void RequestHandler::handlePostMethod()
+// {
+
+// }
 
 void RequestHandler::handleGetMethod(const std::string& physical_path)
 {
@@ -335,11 +342,34 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
-	if (S_ISDIR(file_stat.st_mode))
-	{
-
-	}
-	else if (S_ISREG(file_stat.st_mode))
+	// if (S_ISDIR(file_stat.st_mode))
+	// {
+	// 	std::string uri = _httpRequest.getPath();
+	// 	if (!uri.empty() && uri[uri.length() - 1] != '/')
+	// 	{
+	// 		_handler_error_code = MOVED_PERMANENTLY;
+	// 		_httpResponse.addHeader("Location", uri + "/");
+	// 		return;
+	// 	}
+	// 	if (blah blah blah)
+	// 	{
+			
+	// 	}
+	// 	else
+	// 	{
+	// 		if (_location->isAutoindex() == true)
+	// 		{
+	// 			std::string autoindex_body = generateAutoindex(physical_path, uri);
+	// 			_httpResponse.buildAutoindexResponse(autoindex_body);
+	// 			_res_state = RES_FINISHED; // Then who can build the body bru
+	// 		}
+	// 		else
+	// 		{
+	// 			_handler_error_code = FORBIDDEN;
+	// 		}
+	// 	}
+	// }
+	if (S_ISREG(file_stat.st_mode)) // else if with IS_DIR
 	{
 		_file_stream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
 		if (!_file_stream.is_open())
@@ -347,12 +377,12 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 			_handler_error_code = FORBIDDEN;
 			return;
 		}
-		_httpResponse.buildNormalHeaders(physical_path, file_stat.st_size);
-		_response_buff = _httpResponse.getFormattedHeaders();
+		_httpResponse.buildNormalHeaders(file_stat.st_size, physical_path);
 	}
 	else
 	{
-
+		_handler_error_code = FORBIDDEN;
+		return;
 	}
 }
 

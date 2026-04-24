@@ -277,7 +277,6 @@ void    RequestHandler::buildResponseData(void)
 	if (final_error == NONE)
 	{
 		physical_path = getNormalPagePath();
-	
 		method = _httpRequest.getMethod();
 		if (method == "GET")
 		{
@@ -322,6 +321,8 @@ void    RequestHandler::buildResponseData(void)
 	_response_buff = _httpResponse.getFormattedHeaders();
 }
 
+void RequestHandler::handlePostMethod()
+
 void RequestHandler::handleGetMethod(const std::string& physical_path)
 {
 	struct stat file_stat;
@@ -335,11 +336,34 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
-	if (S_ISDIR(file_stat.st_mode))
-	{
-
-	}
-	else if (S_ISREG(file_stat.st_mode))
+	// if (S_ISDIR(file_stat.st_mode))
+	// {
+	// 	std::string uri = _httpRequest.getPath();
+	// 	if (!uri.empty() && uri[uri.length() - 1] != '/')
+	// 	{
+	// 		_handler_error_code = MOVED_PERMANENTLY;
+	// 		_httpResponse.addHeader("Location", uri + "/");
+	// 		return;
+	// 	}
+	// 	if (blah blah blah)
+	// 	{
+			
+	// 	}
+	// 	else
+	// 	{
+	// 		if (_location->isAutoindex() == true)
+	// 		{
+	// 			std::string autoindex_body = generateAutoindex(physical_path, uri);
+	// 			_httpResponse.buildAutoindexResponse(autoindex_body);
+	// 			_res_state = RES_FINISHED; // Then who can build the body bru
+	// 		}
+	// 		else
+	// 		{
+	// 			_handler_error_code = FORBIDDEN;
+	// 		}
+	// 	}
+	// }
+	if (S_ISREG(file_stat.st_mode)) // else if with IS_DIR
 	{
 		_file_stream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
 		if (!_file_stream.is_open())
@@ -347,12 +371,12 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 			_handler_error_code = FORBIDDEN;
 			return;
 		}
-		_httpResponse.buildNormalHeaders(physical_path, file_stat.st_size);
-		_response_buff = _httpResponse.getFormattedHeaders();
+		_httpResponse.buildNormalHeaders(file_stat.st_size, physical_path);
 	}
 	else
 	{
-
+		_handler_error_code = FORBIDDEN;
+		return;
 	}
 }
 

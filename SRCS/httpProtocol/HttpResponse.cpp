@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/23 23:40:08 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/24 18:03:05 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,19 +124,6 @@ std::string HttpResponse::sizeToString(size_t number) const
 	return (result);
 }
 
-std::string HttpResponse::getFormattedHeaders() const
-{
-	std::string output = "";
-	output += _version + " " + sizeToString(static_cast<size_t>(_status_code)) + " " + _reason_phrase + "\r\n";
-	std::multimap<std::string, std::string>::const_iterator it;
-	for (it = _headers.begin(); it != _headers.end(); ++it)
-	{
-		output += it->first + ": " + it->second + "\r\n";
-	}
-	output += "\r\n";
-	return (output);
-}
-
 const std::string& HttpResponse::getReasonPhrase() const
 {
 	return (_reason_phrase);
@@ -184,7 +171,7 @@ const std::string& HttpResponse::getBody() const
 	return (_body);
 }
 
-std::string HttpResponse::headerToString()
+std::string HttpResponse::getFormattedHeaders() const
 {
 	std::string response_str = "";
 	response_str += _version;
@@ -195,7 +182,7 @@ std::string HttpResponse::headerToString()
 	response_str += "\r\n";
 	std::cout << "Response str before headers: " << response_str << "\n";
 
-	std::multimap<std::string, std::string>::iterator it;
+	std::multimap<std::string, std::string>::const_iterator it;
 	for (it = _headers.begin(); it != _headers.end(); ++it)
 	{
 		response_str += it->first;

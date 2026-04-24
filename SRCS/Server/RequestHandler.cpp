@@ -105,6 +105,7 @@ void	RequestHandler::processReqData(void)
 				if (_httpRequest.parseHeaders(_request_buff))
 				{
 					std::string uri = _httpRequest.getPath();
+					std::cout << "PATH: " << uri << "\n";
 					const std::vector<Location>& bookshelf = _server.getLocations();
 					_location = matchLocation(uri, bookshelf);
 					if (!_location)
@@ -142,6 +143,7 @@ void	RequestHandler::processReqData(void)
 					else
 						keep_processing = false;
 				}
+				std::cout << "REQ STATE BEFORE LEAVING PARSE HEADER " << _req_state << " " << "Handler code: " << _handler_error_code << "Req code: " << "\n";
 				break;
 
 			case REQ_READING_BODY:
@@ -282,14 +284,14 @@ void    RequestHandler::buildResponseData(void)
 		{
 			handleGetMethod(physical_path);
 		}
-		else if (method == "POST")
-		{
-			handlePostMethod(physical_path);
-		}
-		else if (method == "DELETE")
-		{
-			handleDeleteMethod(physical_path);
-		}
+		// else if (method == "POST")
+		// {
+		// 	handlePostMethod(physical_path);
+		// }
+		// else if (method == "DELETE")
+		// {
+		// 	handleDeleteMethod(physical_path);
+		// }
 		else
 		{
 			final_error = METHOD_NOT_ALLOWED;
@@ -319,9 +321,13 @@ void    RequestHandler::buildResponseData(void)
 	else
 		_httpResponse.addHeader("Connection", "keep-alive");
 	_response_buff = _httpResponse.getFormattedHeaders();
+	std::cout << "Handler after response: " << _handler_error_code << " Request code after response " << _httpRequest.getError() << " Response code after response " << _httpResponse.getReasonPhrase() << "\n";
 }
 
-void RequestHandler::handlePostMethod()
+// void RequestHandler::handlePostMethod()
+// {
+
+// }
 
 void RequestHandler::handleGetMethod(const std::string& physical_path)
 {

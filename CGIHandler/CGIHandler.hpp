@@ -30,6 +30,7 @@ class CGIHandler
 		
 		// Member Functions
 		void _closePipe(int pipe[2]);
+		char** _buildEnvp();
 		std::string _readOutput(int fd);
 		HttpResponse _parseCGI(std::string rawOutput);
 

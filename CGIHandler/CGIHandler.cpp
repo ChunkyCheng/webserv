@@ -21,14 +21,18 @@ std::string CGIHandler::_readOutput(int fd) {
 	return (output);
 }
 
-/*
- * Example CGI output:
- *
- * Status: 404 Not Found\r\n
- * Content-Type: text/html\r\n
- * \r\n
- * <h1>Page not found</h1>
- */
+char** CGIHandler::_buildEnvp() {
+	std::vector<std::string> envVars;
+
+	envVars.push_back("REQUEST_METHOD=" + _request.getMethod());
+	envVars.push_back("SCRIPT_NAME=");
+	envVars.push_back("QUERY_STRING=");
+	envVars.push_back("CONTENT_TYPE=");
+	envVars.push_back("CONTENT_LENGTH=");
+	envVars.push_back("HTTP_COOKIE=");
+}
+
+
 HttpResponse CGIHandler::_parseCGI(std::string rawOutput) {
 	size_t pos = rawOutput.find("\r\n\r\n");
 	std::string body = rawOutput.substr(pos + 4);
@@ -36,8 +40,7 @@ HttpResponse CGIHandler::_parseCGI(std::string rawOutput) {
 	HttpResponse response;
 
 	size_t lineStart = 0;
-	size_t lineEnd = headers.find("\r\n");
-	std::string line;
+	size_t lineEnd = headers.find("\r\n"); std::string line;
 	while (lineStart < headers.size()) {
 		if (lineEnd == std::string::npos) {
 			line = headers.substr(lineStart);

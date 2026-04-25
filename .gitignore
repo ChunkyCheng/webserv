@@ -3,3 +3,9 @@ webserv
 .*
 !.gitignore
 OBJS/
+<<<<<<< HEAD
+=======
+httpProtocol/request
+/var
+
+>>>>>>> origin/wendy_http

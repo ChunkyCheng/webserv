@@ -1,0 +1,399 @@
+#include "RequestHandler.hpp"
+#include <cstdlib>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fstream>
+#include <sstream>
+
+RequestHandler::RequestHandler(Server& server,
+std::string& req_buff, std::string& res_buff)
+	: _server(server),
+	_request_buff(req_buff),
+	_response_buff(res_buff),
+	_httpRequest(),
+	_req_state(REQ_READING_HEADERS),
+	_res_state(RES_HEADERS),
+	_handler_error_code(NONE),
+	_location(NULL),
+	_should_close_connection(false)
+{
+}
+
+RequestHandler::~RequestHandler(void)
+{
+}
+
+void	RequestHandler::reset(void)
+{
+	_req_state = REQ_READING_HEADERS;
+	_res_state = RES_HEADERS;
+	_handler_error_code = NONE;
+	_should_close_connection = false;
+	_location = NULL;
+	_httpRequest.reset();
+	_httpResponse.reset();
+	if (_file_stream.is_open())
+	{
+		_file_stream.close();
+	}
+	_file_stream.clear();
+}
+
+bool	RequestHandler::checkRequestComplete(void) const
+{
+	return (_req_state == REQ_COMPLETE || _req_state == REQ_ERROR);
+}
+
+void	RequestHandler::continueBuildResponse(void)
+{
+	if (_response_buff.size() > 16384)
+		return;
+	if (_res_state == RES_HEADERS)
+	{
+		_res_state = RES_BODY;
+	}
+	if (_res_state == RES_BODY)
+	{
+		char buffer[8192];
+		if (_file_stream.is_open())
+		{
+			_file_stream.read(buffer, sizeof(buffer));
+			std::streamsize bytes_read = _file_stream.gcount();
+			if (bytes_read > 0)
+			{
+				_response_buff.append(buffer, bytes_read);
+			}
+			if (_file_stream.bad())
+			{
+				_file_stream.close();
+				_should_close_connection = true;
+				_res_state = RES_FINISHED;
+			}
+			else if (_file_stream.eof())
+			{
+				_file_stream.close();
+				_res_state = RES_FINISHED;
+			}
+		}
+		else
+		{
+			_res_state = RES_FINISHED;
+			_should_close_connection = true;
+		}
+;	}
+	// else if (_res_state == RES_CGI_BODY)
+	// {
+
+	// }
+}
+
+bool	RequestHandler::checkResponseComplete(void) const
+{
+	return (_res_state == RES_FINISHED);
+}
+
+void	RequestHandler::processReqData(void)
+{
+	bool	keep_processing;
+
+	keep_processing = true;
+	while (keep_processing)
+	{
+		switch (_req_state)
+		{
+			case REQ_READING_HEADERS:
+				if (_httpRequest.parseHeaders(_request_buff))
+				{
+					std::string uri = _httpRequest.getPath();
+					std::cout << "PATH: " << uri << "\n";
+					const std::vector<Location>& bookshelf = _server.getLocations();
+					_location = matchLocation(uri, bookshelf);
+					if (!_location)
+					{
+						_handler_error_code = NOT_FOUND;
+						_req_state = REQ_ERROR;
+					}
+					else if (_location->getReturnCode() != 0)
+					{
+						_handler_error_code = static_cast<HttpStatus>(_location->getReturnCode());
+						_req_state = REQ_ERROR;
+					}
+					else if (!_location->isMethodAllowed(_httpRequest.getMethod()))
+					{
+						_handler_error_code = METHOD_NOT_ALLOWED;
+						_req_state = REQ_ERROR;
+					}
+					else if (_httpRequest.hasBody() && _httpRequest.getContentLength() > _location->getClientMaxBodySize())
+					{
+							_handler_error_code = PAYLOAD_TOO_LARGE;
+							_req_state = REQ_ERROR;
+					}
+					else
+					{
+						if (_httpRequest.hasBody())
+							_req_state = REQ_READING_BODY;
+						else
+							_req_state = REQ_COMPLETE;
+					}
+				}
+				else
+				{
+					if (_httpRequest.hasError())
+						_req_state = REQ_ERROR;
+					else
+						keep_processing = false;
+				}
+				std::cout << "REQ STATE BEFORE LEAVING PARSE HEADER " << _req_state << " " << "Handler code: " << _handler_error_code << "Req code: " << "\n";
+				break;
+
+			case REQ_READING_BODY:
+				if (_httpRequest.parseBody(_request_buff))
+					_req_state = REQ_COMPLETE;
+				else
+					if (_httpRequest.hasError())
+						_req_state = REQ_ERROR;
+					else
+						keep_processing = false;
+				break;
+
+			case REQ_COMPLETE:
+				keep_processing = false;
+				break;
+
+			case REQ_ERROR:
+				if (_httpRequest.hasError() || _handler_error_code == PAYLOAD_TOO_LARGE)
+				{
+					_should_close_connection = true;
+					_request_buff.clear();
+				}
+				keep_processing = false;
+				break;
+		}
+	}
+}
+
+bool	RequestHandler::readFileContent(const std::string& file_path, std::string& body_content)
+{
+	std::ifstream file(file_path.c_str(), std::ios::in | std::ios::binary);
+	if (!file.is_open())
+	{
+		return (false);
+	}
+	file.seekg(0, std::ios::end);
+	std::streamsize file_size = file.tellg();
+	file.seekg(0, std::ios::beg);
+	if (file_size > 0)
+	{
+		body_content.resize(file_size);
+		file.read(&body_content[0], file_size);
+	}
+	else
+	{
+		body_content.clear();
+	}
+	return (true);
+}
+
+const Location* RequestHandler::getDefaultLocation(void) const
+{
+	const std::vector<Location>& bookshelf = _server.getLocations();
+	for (std::vector<Location>::const_iterator it = bookshelf.begin(); it != bookshelf.end(); ++it)
+	{
+		if (it->getPrefix() == "/")
+		{
+			return (&(*it));
+		}
+	}
+	return (NULL);
+}
+
+std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
+{
+	const Location* target_location = _location;
+	if (!target_location)
+	{
+		target_location = getDefaultLocation();
+	}
+	if (!target_location)
+	{
+		return ("");
+	}
+	const std::map<int, std::string>& error_pages = target_location->getErrorPages();
+	std::map<int, std::string>::const_iterator it = error_pages.find(error_code);
+	if (it == error_pages.end())
+	{
+		return ("");
+	}
+	std::string custom_path = it->second;
+	std::string root = target_location->getRoot();
+	if (!root.empty() && root[root.length() - 1] != '/' && !custom_path.empty() && custom_path[0] != '/')
+	{
+		root += "/";
+	}
+	std::string full_path = root + custom_path;
+	struct stat file_stat;
+	if (stat(full_path.c_str(), &file_stat) == 0)
+	{
+		if (S_ISREG(file_stat.st_mode))
+		{
+			return (full_path);
+		}
+	}
+	return ("");
+}
+
+std::string RequestHandler::getNormalPagePath(void)
+{
+	std::string root = _location->getRoot();
+	std::string uri = _httpRequest.getPath();
+	if (!root.empty() && root[root.length() - 1] == '/' && !uri.empty() && uri[0] == '/')
+	{
+		root.erase(root.length() - 1);
+	}
+	std::string full_path = root + uri;
+	std::cout << full_path;
+	return (full_path);
+}
+
+void    RequestHandler::buildResponseData(void)
+{
+	HttpStatus final_error = NONE;
+	std::string body_content;
+	std::string physical_path;
+	std::string method;
+
+	if (_httpRequest.hasError())
+	{
+		final_error = _httpRequest.getError();
+	}
+	else if (_handler_error_code != NONE)
+	{
+		final_error = _handler_error_code;
+	}
+	if (!_httpRequest.wantsKeepAlive() ||
+		_httpRequest.hasError() ||
+		final_error == PAYLOAD_TOO_LARGE)
+	{
+		_should_close_connection = true;
+	}
+	if (final_error == NONE)
+	{
+		physical_path = getNormalPagePath();
+		method = _httpRequest.getMethod();
+		if (method == "GET")
+		{
+			handleGetMethod(physical_path);
+		}
+		// else if (method == "POST")
+		// {
+		// 	handlePostMethod(physical_path);
+		// }
+		// else if (method == "DELETE")
+		// {
+		// 	handleDeleteMethod(physical_path);
+		// }
+		else
+		{
+			final_error = METHOD_NOT_ALLOWED;
+		}
+	}
+	if (final_error != NONE)
+	{
+		if (final_error == MOVED_PERMANENTLY ||
+			final_error == FOUND ||
+			final_error == SEE_OTHER ||
+			final_error == TEMPORARY_REDIRECT ||
+			final_error == PERMANENT_REDIRECT)
+		{
+			std::string target = _location->getReturnTarget();
+			_httpResponse.buildRedirectHeaders(target, final_error);
+		}
+		else
+		{
+			body_content.clear();
+			physical_path = getErrorPagePath(final_error);
+			readFileContent(physical_path, body_content);
+			_httpResponse.buildErrorPage(final_error, body_content);
+		}
+	}
+	if (_should_close_connection)
+		_httpResponse.addHeader("Connection", "close");
+	else
+		_httpResponse.addHeader("Connection", "keep-alive");
+	_response_buff = _httpResponse.getFormattedHeaders();
+	std::cout << "Handler after response: " << _handler_error_code << " Request code after response " << _httpRequest.getError() << " Response code after response " << _httpResponse.getReasonPhrase() << "\n";
+}
+
+// void RequestHandler::handlePostMethod()
+// {
+
+// }
+
+void RequestHandler::handleGetMethod(const std::string& physical_path)
+{
+	struct stat file_stat;
+	if (stat(physical_path.c_str(), &file_stat) != 0)
+	{
+		_handler_error_code = NOT_FOUND;
+		return;
+	}
+	if (access(physical_path.c_str(), R_OK) != 0)
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+	// if (S_ISDIR(file_stat.st_mode))
+	// {
+	// 	std::string uri = _httpRequest.getPath();
+	// 	if (!uri.empty() && uri[uri.length() - 1] != '/')
+	// 	{
+	// 		_handler_error_code = MOVED_PERMANENTLY;
+	// 		_httpResponse.addHeader("Location", uri + "/");
+	// 		return;
+	// 	}
+	// 	if (blah blah blah)
+	// 	{
+			
+	// 	}
+	// 	else
+	// 	{
+	// 		if (_location->isAutoindex() == true)
+	// 		{
+	// 			std::string autoindex_body = generateAutoindex(physical_path, uri);
+	// 			_httpResponse.buildAutoindexResponse(autoindex_body);
+	// 			_res_state = RES_FINISHED; // Then who can build the body bru
+	// 		}
+	// 		else
+	// 		{
+	// 			_handler_error_code = FORBIDDEN;
+	// 		}
+	// 	}
+	// }
+	if (S_ISREG(file_stat.st_mode)) // else if with IS_DIR
+	{
+		_file_stream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
+		if (!_file_stream.is_open())
+		{
+			_handler_error_code = FORBIDDEN;
+			return;
+		}
+		_httpResponse.buildNormalHeaders(file_stat.st_size, physical_path);
+	}
+	else
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+}
+
+const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)
+{
+	for (size_t i = 0; i < location.size(); ++i)
+	{
+		if (request_uri.find(location[i].getPrefix()) == 0)
+		{
+			return &location[i];
+		}
+	}
+	return (NULL);
+}

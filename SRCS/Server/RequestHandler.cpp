@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
+#include <dirent.h>
 
 RequestHandler::RequestHandler(Server& server,
 std::string& req_buff, std::string& res_buff)
@@ -37,6 +38,7 @@ void	RequestHandler::reset(void)
 		_file_stream.close();
 	}
 	_file_stream.clear();
+	_redirect_target.clear();
 }
 
 bool	RequestHandler::checkRequestComplete(void) const
@@ -46,6 +48,7 @@ bool	RequestHandler::checkRequestComplete(void) const
 
 void	RequestHandler::continueBuildResponse(void)
 {
+	std::cout << "Did I come into continue Build Response\n";
 	if (_response_buff.size() > 16384)
 		return;
 	if (_res_state == RES_HEADERS)
@@ -80,11 +83,12 @@ void	RequestHandler::continueBuildResponse(void)
 			_res_state = RES_FINISHED;
 			_should_close_connection = true;
 		}
-;	}
+	}
 	// else if (_res_state == RES_CGI_BODY)
 	// {
 
 	// }
+	std::cout << "_res_state after body " << _res_state << "\n";
 }
 
 bool	RequestHandler::checkResponseComplete(void) const
@@ -113,7 +117,7 @@ void	RequestHandler::processReqData(void)
 						_handler_error_code = NOT_FOUND;
 						_req_state = REQ_ERROR;
 					}
-					else if (_location->getReturnCode() != 0)
+					else if (_location->getReturnCode() > 0)
 					{
 						_handler_error_code = static_cast<HttpStatus>(_location->getReturnCode());
 						_req_state = REQ_ERROR;
@@ -321,7 +325,11 @@ void    RequestHandler::buildResponseData(void)
 	else
 		_httpResponse.addHeader("Connection", "keep-alive");
 	_response_buff = _httpResponse.getFormattedHeaders();
-	std::cout << "Handler after response: " << _handler_error_code << " Request code after response " << _httpRequest.getError() << " Response code after response " << _httpResponse.getReasonPhrase() << "\n";
+	const std::string& memory_body = _httpResponse.getBody();
+	if (!memory_body.empty())
+	{
+		_response_buff += memory_body;
+	}
 }
 
 // void RequestHandler::handlePostMethod()
@@ -342,34 +350,63 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
-	// if (S_ISDIR(file_stat.st_mode))
-	// {
-	// 	std::string uri = _httpRequest.getPath();
-	// 	if (!uri.empty() && uri[uri.length() - 1] != '/')
-	// 	{
-	// 		_handler_error_code = MOVED_PERMANENTLY;
-	// 		_httpResponse.addHeader("Location", uri + "/");
-	// 		return;
-	// 	}
-	// 	if (blah blah blah)
-	// 	{
-			
-	// 	}
-	// 	else
-	// 	{
-	// 		if (_location->isAutoindex() == true)
-	// 		{
-	// 			std::string autoindex_body = generateAutoindex(physical_path, uri);
-	// 			_httpResponse.buildAutoindexResponse(autoindex_body);
-	// 			_res_state = RES_FINISHED; // Then who can build the body bru
-	// 		}
-	// 		else
-	// 		{
-	// 			_handler_error_code = FORBIDDEN;
-	// 		}
-	// 	}
-	// }
-	if (S_ISREG(file_stat.st_mode)) // else if with IS_DIR
+	if (S_ISDIR(file_stat.st_mode))
+	{
+		std::string uri = _httpRequest.getPath();
+		if (!uri.empty() && uri[uri.length() - 1] != '/')
+		{
+			_handler_error_code = MOVED_PERMANENTLY;
+			_redirect_target = uri + "/";
+			return;
+		}
+		bool index_found = false;
+		std::string final_index_path = "";
+		const std::vector<std::string>& index = _location->getIndex();
+		for (size_t i = 0; i < index.size(); ++i)
+		{
+			std::string test_path = physical_path + index[i];
+			if (access(test_path.c_str(), R_OK) == 0)
+			{
+				index_found = true;
+				final_index_path = test_path;
+				break;
+			}
+		}
+		if (index_found)
+		{
+			struct stat index_stat;
+			stat(final_index_path.c_str(), &index_stat);
+			_file_stream.open(final_index_path.c_str(), std::ios::in | std::ios::binary);
+			{
+				if (!_file_stream.is_open())
+				{
+					_handler_error_code = FORBIDDEN;
+					return;
+				}
+			}
+			_httpResponse.buildNormalHeaders(index_stat.st_size, final_index_path);
+			_res_state = RES_HEADERS;
+		}
+		else
+		{
+			if (_location->isAutoindex())
+			{
+				std::string autoindex_body = generateAutoindex(physical_path, uri);
+				if (autoindex_body.empty())
+				{
+					_handler_error_code = FORBIDDEN;
+					return;
+				}
+				_httpResponse.buildAutoIndexResponse(autoindex_body); // include the body as well, the buildResponseData will do its thing
+				_res_state = RES_FINISHED;
+			}
+			else
+			{
+				_handler_error_code = FORBIDDEN;
+			}
+		}
+	}
+	else if (S_ISREG(file_stat.st_mode))
 	{
 		_file_stream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
 		if (!_file_stream.is_open())
@@ -384,6 +421,13 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
+}
+
+std::string	generateAutoindex(const std::string& physical_path, const std::string& uri)
+{
+	std::string html = "";
+	html += "<html><head><title>Index of " + uri + "</title></head><body>";
+	html += "<h1>Index of " + uri + "</h1><hr><pre>";
 }
 
 const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)

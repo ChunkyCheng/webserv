@@ -76,6 +76,7 @@ void	RequestHandler::continueBuildResponse(void)
 			{
 				_file_stream.close();
 				_res_state = RES_FINISHED;
+
 			}
 		}
 		else
@@ -229,18 +230,19 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 		return ("");
 	}
 	std::string custom_path = it->second;
-	std::string root = target_location->getRoot();
-	if (!root.empty() && root[root.length() - 1] != '/' && !custom_path.empty() && custom_path[0] != '/')
-	{
-		root += "/";
-	}
-	std::string full_path = root + custom_path;
+	// std::string root = target_location->getRoot();
+	// if (!root.empty() && root[root.length() - 1] != '/' && !custom_path.empty() && custom_path[0] != '/')
+	// {
+	// 	root += "/";
+	// }
+	// std::string full_path = root + custom_path;
+	// std::cout << "Error page full path: " << full_path << "\n";
 	struct stat file_stat;
-	if (stat(full_path.c_str(), &file_stat) == 0)
+	if (stat(custom_path.c_str(), &file_stat) == 0)
 	{
 		if (S_ISREG(file_stat.st_mode))
 		{
-			return (full_path);
+			return (custom_path);
 		}
 	}
 	return ("");
@@ -255,7 +257,7 @@ std::string RequestHandler::getNormalPagePath(void)
 		root.erase(root.length() - 1);
 	}
 	std::string full_path = root + uri;
-	std::cout << full_path;
+	// std::cout << full_path;
 	return (full_path);
 }
 
@@ -300,6 +302,10 @@ void    RequestHandler::buildResponseData(void)
 		{
 			final_error = METHOD_NOT_ALLOWED;
 		}
+	}
+	if (_handler_error_code != NONE)
+	{
+		final_error = _handler_error_code;
 	}
 	if (final_error != NONE)
 	{
@@ -385,7 +391,6 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 				}
 			}
 			_httpResponse.buildNormalHeaders(index_stat.st_size, final_index_path);
-			_res_state = RES_HEADERS;
 		}
 		else
 		{
@@ -428,6 +433,24 @@ std::string	generateAutoindex(const std::string& physical_path, const std::strin
 	std::string html = "";
 	html += "<html><head><title>Index of " + uri + "</title></head><body>";
 	html += "<h1>Index of " + uri + "</h1><hr><pre>";
+
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir(physical_path.c_str())) != NULL)
+	{
+		while ((ent = readdir(dir)) != NULL)
+		{
+			std::string filename = ent->d_name;
+			if (filename == ".")
+				continue;
+			std::string full_path = physical_path;
+			if (full_path.length() > 0 && full_path[full_path.length() - 1 != '/'])
+			{
+				full_path += "/";
+			}
+			full_path += filename;
+		}
+	}
 }
 
 const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)

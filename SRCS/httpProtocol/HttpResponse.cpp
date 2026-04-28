@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/25 22:43:41 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/29 02:54:13 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,6 +171,15 @@ const std::string& HttpResponse::getBody() const
 	return (_body);
 }
 
+void	HttpResponse::buildAutoIndexResponse(const std::string& autoindex_body)
+{
+	setStatusCode(OK);
+	_body = autoindex_body;
+	std::string content_length = sizeToString(_body.length());
+	addHeader("Content-Type", "text/html");
+	addHeader("Content-Length", content_length);
+}
+
 std::string HttpResponse::getFormattedHeaders() const
 {
 	std::string response_str = "";
@@ -180,7 +189,6 @@ std::string HttpResponse::getFormattedHeaders() const
 	response_str += " ";
 	response_str += _reason_phrase;
 	response_str += "\r\n";
-	std::cout << "Response str before headers: " << response_str << "\n";
 
 	std::multimap<std::string, std::string>::const_iterator it;
 	for (it = _headers.begin(); it != _headers.end(); ++it)
@@ -191,7 +199,7 @@ std::string HttpResponse::getFormattedHeaders() const
 		response_str += "\r\n";
 	}
 	response_str += "\r\n";
-	std::cout << "Response str after body: " << response_str << "\n";
+	std::cout << response_str << "\n";
 	return (response_str);
 }
 

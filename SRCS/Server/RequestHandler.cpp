@@ -48,7 +48,6 @@ bool	RequestHandler::checkRequestComplete(void) const
 
 void	RequestHandler::continueBuildResponse(void)
 {
-	std::cout << "Did I come into continue Build Response\n";
 	if (_response_buff.size() > 16384)
 		return;
 	if (_res_state == RES_HEADERS)
@@ -89,7 +88,6 @@ void	RequestHandler::continueBuildResponse(void)
 	// {
 
 	// }
-	std::cout << "_res_state after body " << _res_state << "\n";
 }
 
 bool	RequestHandler::checkResponseComplete(void) const
@@ -148,7 +146,6 @@ void	RequestHandler::processReqData(void)
 					else
 						keep_processing = false;
 				}
-				std::cout << "REQ STATE BEFORE LEAVING PARSE HEADER " << _req_state << " " << "Handler code: " << _handler_error_code << "Req code: " << "\n";
 				break;
 
 			case REQ_READING_BODY:
@@ -315,7 +312,15 @@ void    RequestHandler::buildResponseData(void)
 			final_error == TEMPORARY_REDIRECT ||
 			final_error == PERMANENT_REDIRECT)
 		{
-			std::string target = _location->getReturnTarget();
+			std::string target;
+			if (!_redirect_target.empty())
+			{
+				target = _redirect_target;
+			}
+			else
+			{
+				target = _location->getReturnTarget();
+			}
 			_httpResponse.buildRedirectHeaders(target, final_error);
 		}
 		else
@@ -402,8 +407,7 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 					_handler_error_code = FORBIDDEN;
 					return;
 				}
-				_httpResponse.buildAutoIndexResponse(autoindex_body); // include the body as well, the buildResponseData will do its thing
-				_res_state = RES_FINISHED;
+				_httpResponse.buildAutoIndexResponse(autoindex_body);
 			}
 			else
 			{

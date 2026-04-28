@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/25 22:20:58 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/28 18:23:46 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,6 +52,7 @@ class HttpResponse
 		void				buildErrorPage(HttpStatus error_code, const std::string& body_content);
 		void				buildNormalHeaders(std::streamsize file_size, const std::string& physical_path);
 		void				buildRedirectHeaders(const std::string& target, HttpStatus code);
+		void				buildAutoIndexResponse(const std::string& autoindex_body);
 		std::string			sizeToString(size_t number) const;
 		void				reset();
 };

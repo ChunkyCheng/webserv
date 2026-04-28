@@ -428,7 +428,7 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 	}
 }
 
-std::string	generateAutoindex(const std::string& physical_path, const std::string& uri)
+std::string	RequestHandler::generateAutoindex(const std::string& physical_path, const std::string& uri)
 {
 	std::string html = "";
 	html += "<html><head><title>Index of " + uri + "</title></head><body>";
@@ -444,13 +444,51 @@ std::string	generateAutoindex(const std::string& physical_path, const std::strin
 			if (filename == ".")
 				continue;
 			std::string full_path = physical_path;
-			if (full_path.length() > 0 && full_path[full_path.length() - 1 != '/'])
+			if (full_path.length() > 0 && full_path[full_path.length() - 1] != '/')
 			{
 				full_path += "/";
 			}
 			full_path += filename;
+			
+			struct stat file_stat;
+			std::string date_str = "-";
+			std::string size_str = "-";
+
+			if (stat(full_path.c_str(), &file_stat) == 0)
+			{
+				char time_buf[100];
+				struct tm *tm_info = localtime(&file_stat.st_mtime);
+				strftime(time_buf, sizeof(time_buf), "%d-%b-%Y %H:%M", tm_info);
+				date_str = time_buf;
+				if (S_ISDIR(file_stat.st_mode))
+				{
+					filename += "/";
+				}
+				else
+				{
+					std::stringstream ss;
+					ss << file_stat.st_size;
+					size_str = ss.str();
+				}
+			}
+
+			std::string href_uri = uri;
+			if (href_uri.length() > 0 && href_uri[href_uri.length() - 1] != '/')
+			{
+				href_uri += "/";
+			}
+			html += "<a href=\"" + href_uri + filename + "\">" + filename + "</a>\t\t";
+			html += date_str + "\t\t" + size_str + "\n";
 		}
+		closedir(dir);
 	}
+	else
+	{
+		html.clear();
+		return (html);
+	}
+	html += "</pre><hr></body></html>";
+	return (html);
 }
 
 const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)

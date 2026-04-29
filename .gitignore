@@ -1,3 +1,4 @@
 webserv
 *.0
 OBJS/
+var/www/

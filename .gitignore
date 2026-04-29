@@ -1,8 +1,7 @@
 webserv
 *.o
 .*
-!.gitignore
 OBJS/
 httpProtocol/request
-/var
+
 

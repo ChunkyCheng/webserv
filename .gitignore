@@ -3,5 +3,3 @@ webserv
 .*
 OBJS/
 httpProtocol/request
-
-

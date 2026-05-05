@@ -42,13 +42,17 @@ class	RequestHandler
 		std::string		getNormalPagePath(void);
 		void			handleGetMethod(const std::string& physical_path);
 		std::string		generateAutoindex(const std::string& physical_path, const std::string& uri);
+		HttpStatus		validateRequestLocation(void);
+		HttpStatus		resolveInitialStatus(void);
+		void			evaluateConnectionState(HttpStatus status);
+		HttpStatus		executeMethod(void);
+
 
 	public:
-		// RequestState	getState() const;
 		bool			checkRequestComplete(void) const;
-		void			continueBuildResponse(void);
 		bool			checkResponseComplete(void) const;
 		void			processReqData(void);
+		void			continueBuildResponse(void);
 		void			buildResponseData(void);
 		void			reset(void);
 

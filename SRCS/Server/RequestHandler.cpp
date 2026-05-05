@@ -24,32 +24,173 @@ RequestHandler::~RequestHandler(void)
 {
 }
 
-void	RequestHandler::reset(void)
-{
-	_req_state = REQ_READING_HEADERS;
-	_res_state = RES_HEADERS;
-	_handler_error_code = NONE;
-	_should_close_connection = false;
-	_location = NULL;
-	_httpRequest.reset();
-	_httpResponse.reset();
-	if (_file_stream.is_open())
-	{
-		_file_stream.close();
-	}
-	_file_stream.clear();
-	_redirect_target.clear();
-}
-
 bool	RequestHandler::checkRequestComplete(void) const
 {
 	return (_req_state == REQ_COMPLETE || _req_state == REQ_ERROR);
 }
 
+bool	RequestHandler::checkResponseComplete(void) const
+{
+	return (_res_state == RES_FINISHED);
+}
+
+void	RequestHandler::processReqData(void)
+{
+	bool	keep_processing = true;
+
+	while (keep_processing)
+	{
+		switch (_req_state)
+		{
+			case REQ_READING_HEADERS:
+				if (!_httpRequest.parseHeaders(_request_buff))
+				{
+					if (_httpRequest.hasError())
+						_req_state = REQ_ERROR;
+					else
+						keep_processing = false;
+					break;
+				}
+				HttpStatus validation_status = validateRequestLocation();
+				if (validation_status != OK)
+				{
+					_handler_error_code = validation_status;
+					_req_state = REQ_ERROR;
+					break;
+				}
+				_req_state = _httpRequest.hasBody() ? REQ_READING_BODY : REQ_COMPLETE;
+				break;
+
+			case REQ_READING_BODY:
+				if (_httpRequest.parseBody(_request_buff))
+					_req_state = REQ_COMPLETE;
+				else
+					if (_httpRequest.hasError())
+						_req_state = REQ_ERROR;
+					else
+						keep_processing = false;
+				break;
+
+			case REQ_COMPLETE:
+				keep_processing = false;
+				break;
+			
+			case REQ_ERROR:
+				if (_httpRequest.hasError() || _handler_error_code == PAYLOAD_TOO_LARGE)
+				{
+					_should_close_connection = true;
+					_request_buff.clear();
+				}
+				keep_processing = false;
+				break;
+		}
+	}
+}
+
+void	RequestHandler::buildResponseData(void)
+{
+	HttpStatus status = resolveInitialStatus();
+	evaluateConnectionState(status);
+	if (status == NONE)
+	{
+		status = executeMethod();
+	}
+	if (status != NONE)
+	{
+		buildErrorOrRedirectResponse(status);
+	}
+	assembleFinalBuffer();
+}
+
+// void    RequestHandler::buildResponseData(void)
+// {
+// 	HttpStatus final_error = NONE;
+// 	std::string body_content;
+// 	std::string physical_path;
+// 	std::string method;
+	
+// 	if (_httpRequest.hasError())
+// 	{
+// 		final_error = _httpRequest.getError();
+// 	}
+// 	else if (_handler_error_code != NONE)
+// 	{
+// 		final_error = _handler_error_code;
+// 	}
+// 	if (!_httpRequest.wantsKeepAlive() ||
+// 	_httpRequest.hasError() ||
+// 	final_error == PAYLOAD_TOO_LARGE)
+// 	{
+// 		_should_close_connection = true;
+// 	}
+// 	if (final_error == NONE)
+// 	{
+// 		physical_path = getNormalPagePath();
+// 		method = _httpRequest.getMethod();
+// 		if (method == "GET")
+// 		{
+// 			handleGetMethod(physical_path);
+// 	}
+// 	// else if (method == "POST")
+// 	// {
+// 		// 	handlePostMethod(physical_path);
+// 		// }
+// 		// else if (method == "DELETE")
+// 		// {
+// 			// 	handleDeleteMethod(physical_path);
+// 			// }
+// 			else
+// 			{
+// 				final_error = METHOD_NOT_ALLOWED;
+// 			}
+// 		}
+// 		if (_handler_error_code != NONE)
+// 		{
+// 			final_error = _handler_error_code;
+// 		}
+// 		if (final_error != NONE)
+// 		{
+// 			if (final_error == MOVED_PERMANENTLY ||
+// 				final_error == FOUND ||
+// 				final_error == SEE_OTHER ||
+// 				final_error == TEMPORARY_REDIRECT ||
+// 				final_error == PERMANENT_REDIRECT)
+// 				{
+// 					std::string target;
+// 					if (!_redirect_target.empty())
+// 					{
+// 						target = _redirect_target;
+// 					}
+// 					else
+// 					{
+// 						target = _location->getReturnTarget();
+// 					}
+// 		_httpResponse.buildRedirectHeaders(target, final_error);
+// 		}
+// 		else
+// 		{
+// 			body_content.clear();
+// 			physical_path = getErrorPagePath(final_error);
+// 			readFileContent(physical_path, body_content);
+// 			_httpResponse.buildErrorPage(final_error, body_content);
+// 		}
+// 	}
+// 	if (_should_close_connection)
+// 		_httpResponse.addHeader("Connection", "close");
+// 	else
+// 		_httpResponse.addHeader("Connection", "keep-alive");
+// 	_response_buff = _httpResponse.getFormattedHeaders();
+// 	const std::string& memory_body = _httpResponse.getBody();
+// 	if (!memory_body.empty())
+// 	{
+// 		_response_buff += memory_body;
+// 	}
+// }
+
 void	RequestHandler::continueBuildResponse(void)
 {
 	if (_response_buff.size() > 16384)
-		return;
+	return;
 	if (_res_state == RES_HEADERS)
 	{
 		_res_state = RES_BODY;
@@ -75,7 +216,7 @@ void	RequestHandler::continueBuildResponse(void)
 			{
 				_file_stream.close();
 				_res_state = RES_FINISHED;
-
+				
 			}
 		}
 		else
@@ -86,92 +227,73 @@ void	RequestHandler::continueBuildResponse(void)
 	}
 	// else if (_res_state == RES_CGI_BODY)
 	// {
-
+		
 	// }
 }
 
-bool	RequestHandler::checkResponseComplete(void) const
+// ==============================================================================
+// BUILD RESPONSE FUNCTION PRIVATE FUNCTIONS
+// ==============================================================================
+
+HttpStatus	RequestHandler::executeMethod()
 {
-	return (_res_state == RES_FINISHED);
+		std::string physical_path = getNormalPagePath();
+		std::string method = _httpRequest.getMethod();
+		if (method == "GET")
+		{
+			handleGetMethod(physical_path);
+		}
+		// else if (method == "POST")
+		// {
+		// 	handlePostMethod(physical_path);
+		// }
+		// else if (method == "DELETE")
+		// {
+		// 		handleDeleteMethod(physical_path);
+		// }
+		else
+		{
+			return (METHOD_NOT_ALLOWED);
+		}
 }
 
-void	RequestHandler::processReqData(void)
+
+HttpStatus RequestHandler::resolveInitialStatus()
 {
-	bool	keep_processing;
-
-	keep_processing = true;
-	while (keep_processing)
+	if (_httpRequest.hasError())
 	{
-		switch (_req_state)
-		{
-			case REQ_READING_HEADERS:
-				if (_httpRequest.parseHeaders(_request_buff))
-				{
-					std::string uri = _httpRequest.getPath();
-					std::cout << "PATH: " << uri << "\n";
-					const std::vector<Location>& bookshelf = _server.getLocations();
-					_location = matchLocation(uri, bookshelf);
-					if (!_location)
-					{
-						_handler_error_code = NOT_FOUND;
-						_req_state = REQ_ERROR;
-					}
-					else if (_location->getReturnCode() > 0)
-					{
-						_handler_error_code = static_cast<HttpStatus>(_location->getReturnCode());
-						_req_state = REQ_ERROR;
-					}
-					else if (!_location->isMethodAllowed(_httpRequest.getMethod()))
-					{
-						_handler_error_code = METHOD_NOT_ALLOWED;
-						_req_state = REQ_ERROR;
-					}
-					else if (_httpRequest.hasBody() && _httpRequest.getContentLength() > _location->getClientMaxBodySize())
-					{
-							_handler_error_code = PAYLOAD_TOO_LARGE;
-							_req_state = REQ_ERROR;
-					}
-					else
-					{
-						if (_httpRequest.hasBody())
-							_req_state = REQ_READING_BODY;
-						else
-							_req_state = REQ_COMPLETE;
-					}
-				}
-				else
-				{
-					if (_httpRequest.hasError())
-						_req_state = REQ_ERROR;
-					else
-						keep_processing = false;
-				}
-				break;
-
-			case REQ_READING_BODY:
-				if (_httpRequest.parseBody(_request_buff))
-					_req_state = REQ_COMPLETE;
-				else
-					if (_httpRequest.hasError())
-						_req_state = REQ_ERROR;
-					else
-						keep_processing = false;
-				break;
-
-			case REQ_COMPLETE:
-				keep_processing = false;
-				break;
-
-			case REQ_ERROR:
-				if (_httpRequest.hasError() || _handler_error_code == PAYLOAD_TOO_LARGE)
-				{
-					_should_close_connection = true;
-					_request_buff.clear();
-				}
-				keep_processing = false;
-				break;
-		}
+		return (_httpRequest.getError());
 	}
+	if (_handler_error_code != NONE)
+	{
+		return (_handler_error_code);
+	}
+	return (NONE);
+}
+
+void	RequestHandler::evaluateConnectionState(HttpStatus status)
+{
+	if (!_httpRequest.wantsKeepAlive() || _httpRequest.hasError() || status == PAYLOAD_TOO_LARGE)
+	{
+		_should_close_connection = true;
+	}
+}
+
+HttpStatus RequestHandler::validateRequestLocation()
+{
+	std::string uri = _httpRequest.getPath();
+	std::cout << "PATH: " << uri << "\n";
+	const std::vector<Location>& bookshelf = _server.getLocations();
+	_location = matchLocation(uri, bookshelf);
+	if (!_location)
+		return (NOT_FOUND);
+	else if (_location->getReturnCode() > 0)
+		return (static_cast<HttpStatus>(_location->getReturnCode()));
+	else if (!_location->isMethodAllowed(_httpRequest.getMethod()))
+		return (METHOD_NOT_ALLOWED);
+	else if (_httpRequest.hasBody() && _httpRequest.getContentLength() > _location->getClientMaxBodySize())
+		return (PAYLOAD_TOO_LARGE);
+	return (OK);
 }
 
 bool	RequestHandler::readFileContent(const std::string& file_path, std::string& body_content)
@@ -227,24 +349,25 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 		return ("");
 	}
 	std::string custom_path = it->second;
+	// This will be commented out because config returns absolute path for error pages for now
 	// std::string root = target_location->getRoot();
 	// if (!root.empty() && root[root.length() - 1] != '/' && !custom_path.empty() && custom_path[0] != '/')
 	// {
-	// 	root += "/";
-	// }
-	// std::string full_path = root + custom_path;
-	// std::cout << "Error page full path: " << full_path << "\n";
-	struct stat file_stat;
-	if (stat(custom_path.c_str(), &file_stat) == 0)
-	{
-		if (S_ISREG(file_stat.st_mode))
+		// 	root += "/";
+		// }
+		// std::string full_path = root + custom_path;
+		// std::cout << "Error page full path: " << full_path << "\n";
+		struct stat file_stat;
+		if (stat(custom_path.c_str(), &file_stat) == 0)
 		{
-			return (custom_path);
+			if (S_ISREG(file_stat.st_mode))
+			{
+				return (custom_path);
+			}
 		}
+		return ("");
 	}
-	return ("");
-}
-
+	
 std::string RequestHandler::getNormalPagePath(void)
 {
 	std::string root = _location->getRoot();
@@ -258,94 +381,10 @@ std::string RequestHandler::getNormalPagePath(void)
 	return (full_path);
 }
 
-void    RequestHandler::buildResponseData(void)
-{
-	HttpStatus final_error = NONE;
-	std::string body_content;
-	std::string physical_path;
-	std::string method;
-
-	if (_httpRequest.hasError())
-	{
-		final_error = _httpRequest.getError();
-	}
-	else if (_handler_error_code != NONE)
-	{
-		final_error = _handler_error_code;
-	}
-	if (!_httpRequest.wantsKeepAlive() ||
-		_httpRequest.hasError() ||
-		final_error == PAYLOAD_TOO_LARGE)
-	{
-		_should_close_connection = true;
-	}
-	if (final_error == NONE)
-	{
-		physical_path = getNormalPagePath();
-		method = _httpRequest.getMethod();
-		if (method == "GET")
-		{
-			handleGetMethod(physical_path);
-		}
-		// else if (method == "POST")
-		// {
-		// 	handlePostMethod(physical_path);
-		// }
-		// else if (method == "DELETE")
-		// {
-		// 	handleDeleteMethod(physical_path);
-		// }
-		else
-		{
-			final_error = METHOD_NOT_ALLOWED;
-		}
-	}
-	if (_handler_error_code != NONE)
-	{
-		final_error = _handler_error_code;
-	}
-	if (final_error != NONE)
-	{
-		if (final_error == MOVED_PERMANENTLY ||
-			final_error == FOUND ||
-			final_error == SEE_OTHER ||
-			final_error == TEMPORARY_REDIRECT ||
-			final_error == PERMANENT_REDIRECT)
-		{
-			std::string target;
-			if (!_redirect_target.empty())
-			{
-				target = _redirect_target;
-			}
-			else
-			{
-				target = _location->getReturnTarget();
-			}
-			_httpResponse.buildRedirectHeaders(target, final_error);
-		}
-		else
-		{
-			body_content.clear();
-			physical_path = getErrorPagePath(final_error);
-			readFileContent(physical_path, body_content);
-			_httpResponse.buildErrorPage(final_error, body_content);
-		}
-	}
-	if (_should_close_connection)
-		_httpResponse.addHeader("Connection", "close");
-	else
-		_httpResponse.addHeader("Connection", "keep-alive");
-	_response_buff = _httpResponse.getFormattedHeaders();
-	const std::string& memory_body = _httpResponse.getBody();
-	if (!memory_body.empty())
-	{
-		_response_buff += memory_body;
-	}
-}
 
 // void RequestHandler::handlePostMethod()
 // {
-
+	
 // }
 
 void RequestHandler::handleGetMethod(const std::string& physical_path)
@@ -437,7 +476,7 @@ std::string	RequestHandler::generateAutoindex(const std::string& physical_path, 
 	std::string html = "";
 	html += "<html><head><title>Index of " + uri + "</title></head><body>";
 	html += "<h1>Index of " + uri + "</h1><hr><pre>";
-
+	
 	DIR *dir;
 	struct dirent *ent;
 	if ((dir = opendir(physical_path.c_str())) != NULL)
@@ -446,7 +485,7 @@ std::string	RequestHandler::generateAutoindex(const std::string& physical_path, 
 		{
 			std::string filename = ent->d_name;
 			if (filename == ".")
-				continue;
+			continue;
 			std::string full_path = physical_path;
 			if (full_path.length() > 0 && full_path[full_path.length() - 1] != '/')
 			{
@@ -457,7 +496,7 @@ std::string	RequestHandler::generateAutoindex(const std::string& physical_path, 
 			struct stat file_stat;
 			std::string date_str = "-";
 			std::string size_str = "-";
-
+			
 			if (stat(full_path.c_str(), &file_stat) == 0)
 			{
 				char time_buf[100];
@@ -475,7 +514,7 @@ std::string	RequestHandler::generateAutoindex(const std::string& physical_path, 
 					size_str = ss.str();
 				}
 			}
-
+			
 			std::string href_uri = uri;
 			if (href_uri.length() > 0 && href_uri[href_uri.length() - 1] != '/')
 			{
@@ -505,4 +544,21 @@ const Location*	RequestHandler::matchLocation(const std::string& request_uri, co
 		}
 	}
 	return (NULL);
+}
+
+void	RequestHandler::reset(void)
+{
+	_req_state = REQ_READING_HEADERS;
+	_res_state = RES_HEADERS;
+	_handler_error_code = NONE;
+	_should_close_connection = false;
+	_location = NULL;
+	_httpRequest.reset();
+	_httpResponse.reset();
+	if (_file_stream.is_open())
+	{
+		_file_stream.close();
+	}
+	_file_stream.clear();
+	_redirect_target.clear();
 }

@@ -46,6 +46,8 @@ class	RequestHandler
 		HttpStatus		resolveInitialStatus(void);
 		void			evaluateConnectionState(HttpStatus status);
 		HttpStatus		executeMethod(void);
+		void			buildErrorOrRedirectResponse(HttpStatus status);
+		void			assembleFinalBuffer();
 
 
 	public:

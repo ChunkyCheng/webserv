@@ -189,8 +189,8 @@ void	RequestHandler::buildResponseData(void)
 
 void	RequestHandler::continueBuildResponse(void)
 {
-	if (_response_buff.size() > 16384)
-	return;
+	// if (_response_buff.size() > 16384)
+	// return;
 	if (_res_state == RES_HEADERS)
 	{
 		_res_state = RES_BODY;
@@ -232,8 +232,42 @@ void	RequestHandler::continueBuildResponse(void)
 }
 
 // ==============================================================================
-// BUILD RESPONSE FUNCTION PRIVATE FUNCTIONS
+// BUILDRESPONSEDATA PRIVATE FUNCTIONS
 // ==============================================================================
+
+void RequestHandler::assembleFinalBuffer()
+{
+	if (_should_close_connection)
+		_httpResponse.addHeader("Connection", "close");
+	else
+		_httpResponse.addHeader("Connection", "keep-alive");
+	_response_buff = _httpResponse.getFormattedHeaders();
+	const std::string& memory_body = _httpResponse.getBody();
+	if (!memory_body.empty())
+	{
+		_response_buff += memory_body;
+	}
+}
+
+void	RequestHandler::buildErrorOrRedirectResponse(HttpStatus status)
+{
+	bool is_redirect = (status == MOVED_PERMANENTLY || status == FOUND ||
+						status == SEE_OTHER || status == TEMPORARY_REDIRECT ||
+						status == PERMANENT_REDIRECT);
+		
+	if (is_redirect)
+	{
+		std::string target = !_redirect_target.empty() ? _redirect_target : _location->getReturnTarget();
+		_httpResponse.buildRedirectHeaders(target, status);
+	}
+	else
+	{
+		std::string body_content;
+		std::string physical_path = getErrorPagePath(status);
+		readFileContent(physical_path, body_content);
+		_httpResponse.buildErrorPage(status, body_content);
+	}
+}
 
 HttpStatus	RequestHandler::executeMethod()
 {
@@ -255,6 +289,7 @@ HttpStatus	RequestHandler::executeMethod()
 		{
 			return (METHOD_NOT_ALLOWED);
 		}
+		return (_handler_error_code != NONE ? _handler_error_code : NONE);
 }
 
 

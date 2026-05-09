@@ -12,6 +12,7 @@ enum ResponseState
 {
 	RES_HEADERS,
 	RES_BODY,
+	// RES_CGI_BODY,
 	RES_FINISHED
 };
 
@@ -19,6 +20,7 @@ enum RequestState
 {
 	REQ_READING_HEADERS,
 	REQ_READING_BODY,
+	// REQ_CGI,
 	REQ_COMPLETE,
 	REQ_ERROR
 };
@@ -39,14 +41,20 @@ class	RequestHandler
 		const Location* getDefaultLocation(void) const;
 		std::string		getNormalPagePath(void);
 		void			handleGetMethod(const std::string& physical_path);
+		std::string		generateAutoindex(const std::string& physical_path, const std::string& uri);
+		HttpStatus		validateRequestLocation(void);
+		HttpStatus		resolveInitialStatus(void);
+		void			evaluateConnectionState(HttpStatus status);
+		HttpStatus		executeMethod(void);
+		void			buildErrorOrRedirectResponse(HttpStatus status);
+		void			assembleFinalBuffer();
 
 
 	public:
-		// RequestState	getState() const;
 		bool			checkRequestComplete(void) const;
-		void			continueBuildResponse(void);
 		bool			checkResponseComplete(void) const;
 		void			processReqData(void);
+		void			continueBuildResponse(void);
 		void			buildResponseData(void);
 		void			reset(void);
 
@@ -63,6 +71,7 @@ class	RequestHandler
 		const Location*	_location;
 		bool			_should_close_connection;
 		std::ifstream	_file_stream;
+		std::string		_redirect_target;
 
 };
 

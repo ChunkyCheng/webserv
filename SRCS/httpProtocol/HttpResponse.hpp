@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/24 22:01:12 by yelu             ###   ########.fr       */
+/*   Updated: 2026/04/28 18:23:46 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,10 +27,9 @@ class HttpResponse
 		HttpResponse(const HttpResponse& other);
 		HttpResponse& operator=(const HttpResponse& other);
 
-		std::string	_version;
-		HttpStatus	_status_code;
-		std::string	_reason_phrase;
-
+		std::string								_version;
+		HttpStatus								_status_code;
+		std::string								_reason_phrase;
 		std::multimap<std::string, std::string>	_headers;
 		std::string								_body;
 
@@ -53,6 +52,7 @@ class HttpResponse
 		void				buildErrorPage(HttpStatus error_code, const std::string& body_content);
 		void				buildNormalHeaders(std::streamsize file_size, const std::string& physical_path);
 		void				buildRedirectHeaders(const std::string& target, HttpStatus code);
+		void				buildAutoIndexResponse(const std::string& autoindex_body);
 		std::string			sizeToString(size_t number) const;
 		void				reset();
 };

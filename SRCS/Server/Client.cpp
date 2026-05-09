@@ -49,7 +49,10 @@ void	Client::sendMessage(void)
 	if (_response_buff.size() == 0)
 		_requestHandler.continueBuildResponse();
 	if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
+	{
+		_requestHandler.reset();
 		_epoll.modRemoveSendEvent(_socket);
+	}
 	len = send(_socket.getFd(), _response_buff.c_str(), _response_buff.size(), 0);
 	if (len == -1)
 		std::cerr << strerror(errno) << std::endl;

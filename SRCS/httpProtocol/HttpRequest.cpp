@@ -20,7 +20,41 @@ HttpRequest::HttpRequest()
 	_keep_alive(true)
 {}
 
+HttpRequest::HttpRequest(const HttpRequest& other)
+	: _error_code(other._error_code),
+	_method(other._method),
+	_path(other._path),
+	_version(other._version),
+	_headers(other._headers),
+	_body(other._body),
+	_content_length(other._content_length),
+	_is_chunked(other._is_chunked),
+	_keep_alive(other._keep_alive)
+{}
+
+HttpRequest& HttpRequest::operator=(const HttpRequest& other)
+{
+	if (this != &other)
+	{
+		_error_code = other._error_code;
+		_method = other._method;
+		_path = other._path;
+		_version = other._version;
+		_headers = other._headers;
+		_body = other._body;
+		_content_length = other._content_length;
+		_is_chunked = other._is_chunked;
+		_keep_alive = other._keep_alive;
+	}
+	return (*this);
+}
+
 HttpRequest::~HttpRequest() {}
+
+const std::string& HttpRequest::getBody() const
+{
+	return (_body);
+}
 
 const std::string& HttpRequest::getMethod() const
 {

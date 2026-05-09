@@ -4,3 +4,4 @@ OBJS/
 httpProtocol/request
 /var
 var/www/
+/tests

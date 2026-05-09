@@ -43,6 +43,7 @@ void	RequestHandler::processReqData(void)
 		switch (_req_state)
 		{
 			case REQ_READING_HEADERS:
+			{
 				if (!_httpRequest.parseHeaders(_request_buff))
 				{
 					if (_httpRequest.hasError())
@@ -60,6 +61,7 @@ void	RequestHandler::processReqData(void)
 				}
 				_req_state = _httpRequest.hasBody() ? REQ_READING_BODY : REQ_COMPLETE;
 				break;
+			}
 
 			case REQ_READING_BODY:
 				if (_httpRequest.parseBody(_request_buff))

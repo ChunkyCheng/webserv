@@ -22,9 +22,6 @@
 class HttpRequest
 {
 	private:
-		HttpRequest(const HttpRequest& other);
-		HttpRequest& operator=(const HttpRequest& other);
-
 		// Track state
 		HttpStatus		_error_code;
 
@@ -48,6 +45,8 @@ class HttpRequest
 
 	public:
 		HttpRequest();
+		HttpRequest(const HttpRequest& other);
+		HttpRequest& operator=(const HttpRequest& other);
 		~HttpRequest();
 
 		bool	parseHeaders(std::string& req_buff);
@@ -64,6 +63,7 @@ class HttpRequest
 		const std::string& 					getVersion() const;
 		std::map<std::string, std::string> 	getHeaders() const;
 		size_t								getContentLength() const;
+		const std::string& 					getBody() const;
 };
 
 #endif

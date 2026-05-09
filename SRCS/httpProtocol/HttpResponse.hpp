@@ -24,9 +24,6 @@ class HttpRequest;
 class HttpResponse
 {
 	private:
-		HttpResponse(const HttpResponse& other);
-		HttpResponse& operator=(const HttpResponse& other);
-
 		std::string								_version;
 		HttpStatus								_status_code;
 		std::string								_reason_phrase;
@@ -35,6 +32,8 @@ class HttpResponse
 
 	public:
 		HttpResponse();
+		HttpResponse(const HttpResponse& other);
+		HttpResponse& operator=(const HttpResponse& other);
 		~HttpResponse();
 
 		void		setStatusCode(HttpStatus status_code);

@@ -18,6 +18,27 @@ HttpResponse::HttpResponse()
 	_status_code(NONE)
 {}
 
+HttpResponse::HttpResponse(const HttpResponse& other)
+	: _version(other._version),
+	_status_code(other._status_code),
+	_reason_phrase(other._reason_phrase),
+	_headers(other._headers),
+	_body(other._body)
+{}
+
+HttpResponse& HttpResponse::operator=(const HttpResponse& other)
+{
+	if (this != &other)
+	{
+		_version = other._version;
+		_status_code = other._status_code;
+		_reason_phrase = other._reason_phrase;
+		_headers = other._headers;
+		_body = other._body;
+	}
+	return (*this);
+}
+
 void	HttpResponse::reset()
 {
 	_status_code = NONE;

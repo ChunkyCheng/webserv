@@ -16,7 +16,8 @@ std::string& req_buff, std::string& res_buff)
 	_res_state(RES_HEADERS),
 	_handler_error_code(NONE),
 	_location(NULL),
-	_should_close_connection(false)
+	_should_close_connection(false),
+	_is_cgi(false)
 {
 }
 
@@ -43,6 +44,7 @@ void	RequestHandler::processReqData(void)
 		switch (_req_state)
 		{
 			case REQ_READING_HEADERS:
+			{
 				if (!_httpRequest.parseHeaders(_request_buff))
 				{
 					if (_httpRequest.hasError())
@@ -60,9 +62,12 @@ void	RequestHandler::processReqData(void)
 				}
 				_req_state = _httpRequest.hasBody() ? REQ_READING_BODY : REQ_COMPLETE;
 				break;
+			}
 
 			case REQ_READING_BODY:
-				if (_httpRequest.parseBody(_request_buff))
+			{
+				size_t max_body_size = _location->getClientMaxBodySize();
+				if (_httpRequest.parseBody(_request_buff, max_body_size))
 					_req_state = REQ_COMPLETE;
 				else
 					if (_httpRequest.hasError())
@@ -70,6 +75,8 @@ void	RequestHandler::processReqData(void)
 					else
 						keep_processing = false;
 				break;
+
+			}
 
 			case REQ_COMPLETE:
 				keep_processing = false;
@@ -102,95 +109,8 @@ void	RequestHandler::buildResponseData(void)
 	assembleFinalBuffer();
 }
 
-// void    RequestHandler::buildResponseData(void)
-// {
-// 	HttpStatus final_error = NONE;
-// 	std::string body_content;
-// 	std::string physical_path;
-// 	std::string method;
-	
-// 	if (_httpRequest.hasError())
-// 	{
-// 		final_error = _httpRequest.getError();
-// 	}
-// 	else if (_handler_error_code != NONE)
-// 	{
-// 		final_error = _handler_error_code;
-// 	}
-// 	if (!_httpRequest.wantsKeepAlive() ||
-// 	_httpRequest.hasError() ||
-// 	final_error == PAYLOAD_TOO_LARGE)
-// 	{
-// 		_should_close_connection = true;
-// 	}
-// 	if (final_error == NONE)
-// 	{
-// 		physical_path = getNormalPagePath();
-// 		method = _httpRequest.getMethod();
-// 		if (method == "GET")
-// 		{
-// 			handleGetMethod(physical_path);
-// 	}
-// 	// else if (method == "POST")
-// 	// {
-// 		// 	handlePostMethod(physical_path);
-// 		// }
-// 		// else if (method == "DELETE")
-// 		// {
-// 			// 	handleDeleteMethod(physical_path);
-// 			// }
-// 			else
-// 			{
-// 				final_error = METHOD_NOT_ALLOWED;
-// 			}
-// 		}
-// 		if (_handler_error_code != NONE)
-// 		{
-// 			final_error = _handler_error_code;
-// 		}
-// 		if (final_error != NONE)
-// 		{
-// 			if (final_error == MOVED_PERMANENTLY ||
-// 				final_error == FOUND ||
-// 				final_error == SEE_OTHER ||
-// 				final_error == TEMPORARY_REDIRECT ||
-// 				final_error == PERMANENT_REDIRECT)
-// 				{
-// 					std::string target;
-// 					if (!_redirect_target.empty())
-// 					{
-// 						target = _redirect_target;
-// 					}
-// 					else
-// 					{
-// 						target = _location->getReturnTarget();
-// 					}
-// 		_httpResponse.buildRedirectHeaders(target, final_error);
-// 		}
-// 		else
-// 		{
-// 			body_content.clear();
-// 			physical_path = getErrorPagePath(final_error);
-// 			readFileContent(physical_path, body_content);
-// 			_httpResponse.buildErrorPage(final_error, body_content);
-// 		}
-// 	}
-// 	if (_should_close_connection)
-// 		_httpResponse.addHeader("Connection", "close");
-// 	else
-// 		_httpResponse.addHeader("Connection", "keep-alive");
-// 	_response_buff = _httpResponse.getFormattedHeaders();
-// 	const std::string& memory_body = _httpResponse.getBody();
-// 	if (!memory_body.empty())
-// 	{
-// 		_response_buff += memory_body;
-// 	}
-// }
-
 void	RequestHandler::continueBuildResponse(void)
 {
-	// if (_response_buff.size() > 16384)
-	// return;
 	if (_res_state == RES_HEADERS)
 	{
 		_res_state = RES_BODY;
@@ -235,6 +155,34 @@ void	RequestHandler::continueBuildResponse(void)
 // BUILDRESPONSEDATA PRIVATE FUNCTIONS
 // ==============================================================================
 
+void	RequestHandler::handlePostMethod(const std::string& physical_path)
+{
+	bool upload_enabled = _location->isUploadEnabled();
+	if (!upload_enabled)
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+	std::string upload_path = _location->getUploadFilePath(physical_path);
+	std::ofstream file(upload_path.c_str(), std::ios::out | std::ios::binary);
+	if (!file.is_open())
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+	const std::string& body = _httpRequest.getBody();
+	file.write(body.c_str(), body.size());
+	if (file.bad())
+	{
+		_handler_error_code = INTERNAL_SERVER_ERROR;
+	}
+	else
+	{
+		_handler_error_code = CREATED;
+	}
+	file.close();
+}
+
 void RequestHandler::assembleFinalBuffer()
 {
 	if (_should_close_connection)
@@ -272,24 +220,31 @@ void	RequestHandler::buildErrorOrRedirectResponse(HttpStatus status)
 HttpStatus	RequestHandler::executeMethod()
 {
 		std::string physical_path = getNormalPagePath();
-		std::string method = _httpRequest.getMethod();
-		if (method == "GET")
-		{
-			handleGetMethod(physical_path);
-		}
-		// else if (method == "POST")
+		// if (_is_cgi)
 		// {
-		// 	handlePostMethod(physical_path);
+		// 	_handler_error_code = CGI.executeCGI(_httpRequest, physical_path, _httpResponse);
 		// }
-		// else if (method == "DELETE")
+		// else
 		// {
-		// 		handleDeleteMethod(physical_path);
+			std::string method = _httpRequest.getMethod();
+			if (method == "GET")
+			{
+				handleGetMethod(physical_path);
+			}
+			else if (method == "POST")
+			{
+				handlePostMethod(physical_path);
+			}
+			else if (method == "DELETE")
+			{
+				handleDeleteMethod(physical_path);
+			}
+			else
+			{
+				return (METHOD_NOT_ALLOWED);
+			}
+			return (_handler_error_code != NONE ? _handler_error_code : NONE);
 		// }
-		else
-		{
-			return (METHOD_NOT_ALLOWED);
-		}
-		return (_handler_error_code != NONE ? _handler_error_code : NONE);
 }
 
 
@@ -328,7 +283,30 @@ HttpStatus RequestHandler::validateRequestLocation()
 		return (METHOD_NOT_ALLOWED);
 	else if (_httpRequest.hasBody() && _httpRequest.getContentLength() > _location->getClientMaxBodySize())
 		return (PAYLOAD_TOO_LARGE);
+	size_t dot_pos = uri.find_last_of('.');
+	if (dot_pos != std::string::npos)
+	{
+		std::string ext = uri.substr(dot_pos);
+		if (isCgiExtension(ext))
+		{
+			_is_cgi = true;
+		}
+	}
 	return (OK);
+}
+
+bool	RequestHandler::isCgiExtension(std::string &ext)
+{
+	const char* valid_ext[] = {".py", ".php", ".cgi"};
+	size_t num_ext = sizeof(valid_ext) / sizeof(valid_ext[0]);
+	for (size_t i = 0; i < num_ext; ++i)
+	{
+		if (ext == valid_ext[i])
+		{
+			return (true);
+		}
+	}
+	return (false);
 }
 
 bool	RequestHandler::readFileContent(const std::string& file_path, std::string& body_content)
@@ -421,6 +399,28 @@ std::string RequestHandler::getNormalPagePath(void)
 // {
 	
 // }
+
+void RequestHandler::handleDeleteMethod(const std::string& physical_path)
+{
+	if (access(physical_path.c_str(), F_OK) != 0)
+	{
+		_handler_error_code = NOT_FOUND;
+		return;
+	}
+	if (access(physical_path.c_str(), W_OK) != 0)
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+	if (unlink(physical_path.c_str()) == 0)
+	{
+		_handler_error_code = NO_CONTENT;
+	}
+	else
+	{
+		_handler_error_code = INTERNAL_SERVER_ERROR;
+	}
+}
 
 void RequestHandler::handleGetMethod(const std::string& physical_path)
 {

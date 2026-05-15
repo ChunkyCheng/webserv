@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/21 16:58:27 by yelu             ###   ########.fr       */
+/*   Updated: 2026/05/14 02:48:26 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,16 @@
 #include <map>
 #include "HttpStatus.hpp"
 
+enum ChunkState
+{
+		CHUNK_SIZE,
+		CHUNK_DATA,
+		CHUNK_CRLF,
+		CHUNK_TRAILER,
+		CHUNK_COMPLETE,
+		CHUNK_ERROR
+};
+
 class HttpRequest
 {
 	private:
@@ -27,6 +37,9 @@ class HttpRequest
 
 		// Track state
 		HttpStatus		_error_code;
+		ChunkState		_chunk_state;
+		size_t			_chunk_size;
+		size_t			_chunk_bytes_read;
 
 		// Protocol identifiers
 		std::string		_method; // First line of the request, e.g., "GET", "POST", etc.
@@ -45,13 +58,14 @@ class HttpRequest
 		bool	parseHeaderLine(const std::string& line);
 		bool	setupBodyType();
 		bool	parseContentLength();
+		bool	parseChunkedBody(std::string& req_buff, size_t max_body_size);
 
 	public:
 		HttpRequest();
 		~HttpRequest();
 
 		bool	parseHeaders(std::string& req_buff);
-		bool	parseBody(std::string& req_buff);
+		bool	parseBody(std::string& req_buff, size_t max_body_size);
 		void	reset();
 
 		bool	hasError() const;
@@ -64,6 +78,7 @@ class HttpRequest
 		const std::string& 					getVersion() const;
 		std::map<std::string, std::string> 	getHeaders() const;
 		size_t								getContentLength() const;
+		const std::string&					getBody() const;
 };
 
 #endif

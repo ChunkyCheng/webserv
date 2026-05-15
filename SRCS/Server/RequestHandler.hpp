@@ -20,7 +20,6 @@ enum RequestState
 {
 	REQ_READING_HEADERS,
 	REQ_READING_BODY,
-	// REQ_CGI,
 	REQ_COMPLETE,
 	REQ_ERROR
 };
@@ -48,6 +47,9 @@ class	RequestHandler
 		HttpStatus		executeMethod(void);
 		void			buildErrorOrRedirectResponse(HttpStatus status);
 		void			assembleFinalBuffer();
+		void			handleDeleteMethod(const std::string& physical_path);
+		bool			isCgiExtension(std::string& ext);
+		void			handlePostMethod(const std::string& physical_path);
 
 
 	public:
@@ -72,6 +74,7 @@ class	RequestHandler
 		bool			_should_close_connection;
 		std::ifstream	_file_stream;
 		std::string		_redirect_target;
+		bool			_is_cgi;
 
 };
 

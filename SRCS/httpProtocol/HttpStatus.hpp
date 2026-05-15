@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/09 00:22:16 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/23 21:54:57 by yelu             ###   ########.fr       */
+/*   Updated: 2026/05/14 02:32:10 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@ enum HttpStatus
 {
 	NONE = 0,
 	OK = 200,
+	CREATED = 201,
 	NO_CONTENT = 204,
 	MOVED_PERMANENTLY = 301,
 	FOUND = 302,

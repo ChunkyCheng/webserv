@@ -6,7 +6,7 @@
 /*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/24 22:31:47 by yelu             ###   ########.fr       */
+/*   Updated: 2026/05/14 02:48:52 by yelu             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,11 @@ std::map<std::string, std::string> HttpRequest::getHeaders() const
 size_t	HttpRequest::getContentLength() const
 {
 	return (_content_length);
+}
+
+const std::string& HttpRequest::getBody() const
+{
+	return (_body);
 }
 
 bool	HttpRequest::hasBody() const
@@ -233,14 +238,19 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 	return (true);
 }
 
-bool	HttpRequest::parseBody(std::string& req_buff)
+bool	HttpRequest::parseBody(std::string& req_buff, size_t max_body_size)
 {
-	// if (_is_chunked)
-	// 	return (parseChunkedBody(req_buff)); // Dont know how to do yet so I will do response first
-	// else
+	if (_is_chunked)
+		return (parseChunkedBody(req_buff, max_body_size));
+	else
 	{
 		size_t bytes_needed = _content_length - _body.size();
 		size_t bytes_to_take = std::min(bytes_needed, req_buff.size());
+		if (_body.size() + bytes_to_take > max_body_size)
+		{
+			_error_code = PAYLOAD_TOO_LARGE;
+			return (false);
+		}
 		if (bytes_to_take > 0)
 		{
 			_body.append(req_buff, 0, bytes_to_take);
@@ -266,17 +276,129 @@ bool	HttpRequest::setupBodyType()
 	}
 	if (has_te)
 	{
-		// if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
-		// {
-		// 	_is_chunked = true;
-		// 	return (true);
-		// }
+		if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
+		{
+			_is_chunked = true;
+			return (true);
+		}
 		_error_code = NOT_IMPLEMENTED;
 		return (false);
 	}
 	if (has_cl)
 		return (parseContentLength());
 	return (true);
+}
+
+bool	HttpRequest::parseChunkedBody(std::string& req_buff, size_t max_body_size)
+{
+	while (!req_buff.empty() && _chunk_state != CHUNK_COMPLETE && _chunk_state != CHUNK_ERROR)
+	{
+		switch (_chunk_state)
+		{
+			case CHUNK_SIZE:
+			{
+				size_t pos = req_buff.find("\r\n");
+				if (pos == std::string::npos)
+				{
+					return (false);
+				}
+				std::string chunked_str = req_buff.substr(0, pos);
+				size_t semi = chunked_str.find(';');
+				if (semi != std::string::npos)
+				{
+					chunked_str = chunked_str.substr(0, semi);
+				}
+				std::stringstream ss;
+				ss << std::hex << chunked_str;
+				ss >> _chunk_size;
+				if (ss.fail())
+				{
+					_chunk_state = CHUNK_ERROR;
+					_error_code = BAD_REQUEST;
+					return (false);
+				}
+				req_buff.erase(0, pos + 2);
+				_chunk_bytes_read = 0;
+				if (_chunk_size == 0)
+				{
+					_chunk_state = CHUNK_TRAILER;
+				}
+				else
+				{
+					_chunk_state = CHUNK_DATA;
+				}
+				break;
+			}
+
+			case CHUNK_DATA:
+			{
+				size_t bytes_needed = _chunk_size - _chunk_bytes_read;
+				size_t bytes_to_take = std::min(bytes_needed, req_buff.size());
+
+				if (bytes_to_take > 0)
+				{
+					if (_body.size() + bytes_to_take > max_body_size)
+					{
+						_chunk_state = CHUNK_ERROR;
+						_error_code = PAYLOAD_TOO_LARGE;
+						return (false);
+					}
+					_body.append(req_buff, 0, bytes_to_take);
+					req_buff.erase(0, bytes_to_take);
+					_chunk_bytes_read += bytes_to_take;
+				}
+				if (_chunk_bytes_read == _chunk_size)
+				{
+					_chunk_state = CHUNK_CRLF;
+				}
+				else
+				{
+					return (false);
+				}
+				break;
+			}
+
+			case CHUNK_CRLF:
+			{
+				if (req_buff.length() < 2)
+				{
+					return (false);
+				}
+				if (req_buff.substr(0, 2) != "\r\n")
+				{
+					_chunk_state = CHUNK_ERROR;
+					_error_code = BAD_REQUEST;
+					return (false);
+				}
+				req_buff.erase(0, 2);
+				_chunk_state = CHUNK_SIZE;
+				break;
+			}
+			
+			case CHUNK_TRAILER:
+			{
+				size_t pos = req_buff.find("\r\n\r\n");
+				if (pos == std::string::npos)
+				{
+					return (false);
+				}
+				if (pos == 0)
+				{
+					req_buff.erase(0, 2);
+					_content_length = _body.size();
+					_chunk_state = CHUNK_COMPLETE;
+				}
+				else
+				{
+					req_buff.erase(0, pos + 2);
+				}
+				break;
+			}
+			default:
+				break;
+		}
+	}
+	return (_chunk_state == CHUNK_COMPLETE);
 }
 
 bool	HttpRequest::parseContentLength()
@@ -306,4 +428,7 @@ void	HttpRequest::reset()
 	_error_code = NONE;
 	_is_chunked = false;
 	_keep_alive = true;
+	_chunk_bytes_read = 0;
+	_chunk_size = 0;
+	_chunk_state = CHUNK_SIZE;
 }

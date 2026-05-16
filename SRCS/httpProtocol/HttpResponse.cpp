@@ -150,6 +150,22 @@ const std::string& HttpResponse::getReasonPhrase() const
 	return (_reason_phrase);
 }
 
+std::vector<std::string> HttpResponse::getHeaderValues(const std::string& key) const
+{
+	std::vector<std::string> values;
+	std::string lower_key = key;
+	for (size_t i = 0; i < lower_key.size(); ++i) lower_key[i] = std::tolower(lower_key[i]);
+	for (std::multimap<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+	{
+		std::string h = it->first;
+		std::string hl = h;
+		for (size_t i = 0; i < hl.size(); ++i) hl[i] = std::tolower(hl[i]);
+		if (hl == lower_key)
+			values.push_back(it->second);
+	}
+	return (values);
+}
+
 void	HttpResponse::buildNormalHeaders(std::streamsize file_size, const std::string& physical_path)
 {
 	setStatusCode(OK);

@@ -124,7 +124,7 @@ HttpResponse CGIHandler::_parseCGI(std::string rawOutput) {
 	return (response);
 }
 
-
+/*
 HttpResponse CGIHandler::execute(HttpRequest& request) {
 	int stdinPipe[2]; // parent writes, child reads
 	int stdoutPipe[2]; // parent reads, child writes
@@ -186,6 +186,7 @@ HttpResponse CGIHandler::execute(HttpRequest& request) {
 	HttpResponse response = _parseCGI(rawOutput);
 	return (response);
 }
+*/
 
 void CGIHandler::executeAsync(HttpRequest& request)
 {
@@ -231,7 +232,6 @@ void CGIHandler::executeAsync(HttpRequest& request)
 	close(stdinPipe[0]);
 	close(stdoutPipe[1]);
 	
-	// Store pipes for later collection
 	_stdinPipe[0] = stdinPipe[0];
 	_stdinPipe[1] = stdinPipe[1];
 	_stdoutPipe[0] = stdoutPipe[0];
@@ -244,7 +244,7 @@ void CGIHandler::executeAsync(HttpRequest& request)
 		const std::string& body = request.getBody();
 		if (!body.empty()) {
 			ssize_t written = write(_stdinPipe[1], body.c_str(), body.size());
-			(void)written;  // Avoid unused variable warning
+			(void)written;
 		}
 	}
 	close(_stdinPipe[1]);

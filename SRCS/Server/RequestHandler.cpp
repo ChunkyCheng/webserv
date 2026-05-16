@@ -319,6 +319,11 @@ void RequestHandler::assembleFinalBuffer()
 	}
 }
 
+std::vector<std::string> RequestHandler::getSetCookieHeaders() const
+{
+	return (_httpResponse.getHeaderValues("Set-Cookie"));
+}
+
 void	RequestHandler::buildErrorOrRedirectResponse(HttpStatus status)
 {
 	bool is_redirect = (status == MOVED_PERMANENTLY || status == FOUND ||

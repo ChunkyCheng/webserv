@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*   By: akok <akok@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:41 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/21 16:58:27 by yelu             ###   ########.fr       */
+/*   Updated: 2026/05/16 12:08:29 by akok             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,7 @@ class HttpRequest
 		const std::string& 					getPath() const;
 		const std::string& 					getVersion() const;
 		std::map<std::string, std::string> 	getHeaders() const;
+		std::map<std::string, std::string> 	getCookies() const;
 		size_t								getContentLength() const;
 		const std::string& 					getBody() const;
 };

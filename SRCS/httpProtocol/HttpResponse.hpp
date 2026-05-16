@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*   By: akok <akok@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/28 18:23:46 by yelu             ###   ########.fr       */
+/*   Updated: 2026/05/16 12:08:39 by akok             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include "HttpStatus.hpp"
 #include <string>
 #include <fstream>
+#include <vector>
 
 class HttpRequest;
 
@@ -44,6 +45,7 @@ class HttpResponse
 		const std::string&	getReasonPhrase() const;
 		std::string			getFormattedHeaders() const;
 		const std::string&	getBody() const;
+		std::vector<std::string> getHeaderValues(const std::string& key) const;
 		std::string			getMimeType(const std::string& path);
 
 		void				setBody(const std::string& body);

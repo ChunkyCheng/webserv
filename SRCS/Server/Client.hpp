@@ -4,6 +4,7 @@
 # include "socket.h"
 # include "ClientSocket.hpp"
 # include "RequestHandler.hpp"
+# include "../utils/Cookie.hpp"
 
 class	Epoll;
 
@@ -30,6 +31,9 @@ class	Client
 		RequestHandler	_requestHandler;
 		std::string		_request_buff;
 		std::string		_response_buff;
+
+		// Per-connection cookie jar: name -> Cookie
+		std::map<std::string, Cookie> _cookie_jar;
 };
 
 #endif

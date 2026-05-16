@@ -39,7 +39,7 @@ class CGIHandler
 		~CGIHandler();
 
 		// Blocking execution (original)
-		HttpResponse execute(HttpRequest& request);
+		// HttpResponse execute(HttpRequest& request);
 		
 		// Async execution methods
 		void executeAsync(HttpRequest& request);

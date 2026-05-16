@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*   By: akok <akok@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/04 16:30:29 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/24 22:31:47 by yelu             ###   ########.fr       */
+/*   Updated: 2026/05/16 12:08:24 by akok             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,43 @@ const std::string& HttpRequest::getVersion() const
 std::map<std::string, std::string> HttpRequest::getHeaders() const
 {
 	return (_headers);
+}
+
+std::map<std::string, std::string> HttpRequest::getCookies() const
+{
+	std::map<std::string, std::string> cookies;
+	std::map<std::string, std::string>::const_iterator it = _headers.find("cookie");
+	if (it == _headers.end())
+		return (cookies);
+	std::string cookie_str = it->second;
+	size_t pos = 0;
+	while (pos < cookie_str.size())
+	{
+		// find next pair
+		size_t sep = cookie_str.find(';', pos);
+		std::string pair = cookie_str.substr(pos, (sep == std::string::npos) ? std::string::npos : sep - pos);
+		// trim
+		size_t start = pair.find_first_not_of(' ');
+		if (start == std::string::npos)
+		{
+			if (sep == std::string::npos) break;
+			pos = sep + 1;
+			continue;
+		}
+		size_t end = pair.find_last_not_of(' ');
+		pair = pair.substr(start, end - start + 1);
+		size_t eq = pair.find('=');
+		if (eq != std::string::npos)
+		{
+			std::string name = pair.substr(0, eq);
+			std::string value = pair.substr(eq + 1);
+			cookies[name] = value;
+		}
+		if (sep == std::string::npos)
+			break;
+		pos = sep + 1;
+	}
+	return (cookies);
 }
 
 size_t	HttpRequest::getContentLength() const

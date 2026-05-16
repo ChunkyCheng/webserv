@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include <vector>
 #include "Server.hpp"
 #include "Epoll.hpp"
 
@@ -57,6 +58,13 @@ void	Client::sendMessage(void)
 			return;
 		}
 		_requestHandler.continueBuildResponse();
+	}
+	std::vector<std::string> setCookies = _requestHandler.getSetCookieHeaders();
+	for (size_t i = 0; i < setCookies.size(); ++i)
+	{
+		Cookie c = Cookie::parseSetCookie(setCookies[i]);
+		if (!c.name.empty())
+			_cookie_jar[c.name] = c;
 	}
 	if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
 	{

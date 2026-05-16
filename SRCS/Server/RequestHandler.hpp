@@ -63,7 +63,10 @@ class	RequestHandler
 		void			processReqData(void);
 		void			continueBuildResponse(void);
 		void			buildResponseData(void);
-		void			reset(void);
+		void		reset(void);
+
+		// Expose Set-Cookie headers from the current response
+		std::vector<std::string> getSetCookieHeaders() const;
 
 	protected:
 	private:

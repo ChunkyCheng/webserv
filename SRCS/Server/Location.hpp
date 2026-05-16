@@ -28,6 +28,7 @@ class	Location
 		const std::vector<std::string>&		getIndex(void) const;
 		const bool&							isAutoindex(void) const;
 		const std::map<int, std::string>&	getErrorPages(void) const;
+		const std::map<std::string, Config::s_cgi_info>& getCgiInfo(void) const;
 
 	private:
 		std::string	_prefix;

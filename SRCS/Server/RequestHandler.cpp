@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <dirent.h>
+#include "CGIHandler.hpp"
 
 RequestHandler::RequestHandler(Server& server,
 std::string& req_buff, std::string& res_buff)
@@ -16,12 +17,20 @@ std::string& req_buff, std::string& res_buff)
 	_res_state(RES_HEADERS),
 	_handler_error_code(NONE),
 	_location(NULL),
-	_should_close_connection(false)
+	_should_close_connection(false),
+	_cgi_process_pid(-1),
+	_cgi_start_time(0),
+	_cgi_handler(NULL)
 {
 }
 
 RequestHandler::~RequestHandler(void)
 {
+	if (_cgi_handler)
+	{
+		delete _cgi_handler;
+		_cgi_handler = NULL;
+	}
 }
 
 bool	RequestHandler::checkRequestComplete(void) const
@@ -32,6 +41,11 @@ bool	RequestHandler::checkRequestComplete(void) const
 bool	RequestHandler::checkResponseComplete(void) const
 {
 	return (_res_state == RES_FINISHED);
+}
+
+bool	RequestHandler::isCgiWaiting(void) const
+{
+	return (_res_state == RES_CGI_WAITING);
 }
 
 void	RequestHandler::processReqData(void)
@@ -101,7 +115,11 @@ void	RequestHandler::buildResponseData(void)
 	{
 		buildErrorOrRedirectResponse(status);
 	}
-	assembleFinalBuffer();
+	// Only assemble final buffer if we're not waiting for CGI
+	if (_res_state != RES_CGI_WAITING)
+	{
+		assembleFinalBuffer();
+	}
 }
 
 // void    RequestHandler::buildResponseData(void)
@@ -191,8 +209,62 @@ void	RequestHandler::buildResponseData(void)
 
 void	RequestHandler::continueBuildResponse(void)
 {
-	// if (_response_buff.size() > 16384)
-	// return;
+	// Handle CGI_WAITING state - check if process is finished
+	if (_res_state == RES_CGI_WAITING)
+	{
+		if (!_cgi_handler)
+		{
+			_handler_error_code = INTERNAL_SERVER_ERROR;
+			_res_state = RES_FINISHED;
+			buildErrorOrRedirectResponse(_handler_error_code);
+			assembleFinalBuffer();
+			return;
+		}
+		
+		// Check for timeout
+		time_t elapsed = time(NULL) - _cgi_start_time;
+		if (elapsed > CGI_TIMEOUT)
+		{
+			_cgi_handler->killProcess();
+			_handler_error_code = INTERNAL_SERVER_ERROR;
+			_res_state = RES_FINISHED;
+			buildErrorOrRedirectResponse(_handler_error_code);
+			assembleFinalBuffer();
+			return;
+		}
+		
+		// Check if process finished
+		int exitStatus = 0;
+		if (_cgi_handler->isProcessFinished(exitStatus))
+		{
+			// Collect output and parse response
+			std::string rawOutput = _cgi_handler->collectOutput();
+			_httpResponse = _cgi_handler->parseResponse(rawOutput);
+			
+			// Assemble the buffer now that we have the response
+			if (_should_close_connection)
+				_httpResponse.addHeader("Connection", "close");
+			else
+				_httpResponse.addHeader("Connection", "keep-alive");
+			_response_buff = _httpResponse.getFormattedHeaders();
+			const std::string& memory_body = _httpResponse.getBody();
+			if (!memory_body.empty())
+			{
+				_response_buff += memory_body;
+			}
+			
+			// Transition to finished state (response is complete for CGI)
+			_res_state = RES_FINISHED;
+			
+			// Clean up CGI handler
+			delete _cgi_handler;
+			_cgi_handler = NULL;
+		}
+		// If still running, don't transition state - will be checked again next call
+		return;
+	}
+	
+	// Handle normal header/body streaming
 	if (_res_state == RES_HEADERS)
 	{
 		_res_state = RES_BODY;
@@ -227,10 +299,6 @@ void	RequestHandler::continueBuildResponse(void)
 			_should_close_connection = true;
 		}
 	}
-	// else if (_res_state == RES_CGI_BODY)
-	// {
-		
-	// }
 }
 
 // ==============================================================================
@@ -279,14 +347,14 @@ HttpStatus	RequestHandler::executeMethod()
 		{
 			handleGetMethod(physical_path);
 		}
-		// else if (method == "POST")
-		// {
-		// 	handlePostMethod(physical_path);
-		// }
-		// else if (method == "DELETE")
-		// {
-		// 		handleDeleteMethod(physical_path);
-		// }
+		else if (method == "POST")
+		{
+			handlePostMethod(physical_path);
+		}
+		else if (method == "DELETE")
+		{
+			handleDeleteMethod(physical_path);
+		}
 		else
 		{
 			return (METHOD_NOT_ALLOWED);
@@ -408,24 +476,147 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 std::string RequestHandler::getNormalPagePath(void)
 {
 	std::string root = _location->getRoot();
+	std::string prefix = _location->getPrefix();
 	std::string uri = _httpRequest.getPath();
-	if (!root.empty() && root[root.length() - 1] == '/' && !uri.empty() && uri[0] == '/')
+	
+	// Remove query string from URI
+	std::string::size_type query_pos = uri.find('?');
+	if (query_pos != std::string::npos)
+	{
+		uri = uri.substr(0, query_pos);
+	}
+	
+	// Extract suffix after the location prefix
+	std::string suffix = uri;
+	if (uri.find(prefix) == 0)  // If URI starts with prefix
+	{
+		suffix = uri.substr(prefix.length());
+		if (suffix.empty())
+			suffix = "/";
+	}
+	
+	// Normalize path separators between root and URI suffix
+	if (!root.empty() && root[root.length() - 1] == '/' && !suffix.empty() && suffix[0] == '/')
 	{
 		root.erase(root.length() - 1);
 	}
-	std::string full_path = root + uri;
-	// std::cout << full_path;
+	else if (!root.empty() && root[root.length() - 1] != '/' && !suffix.empty() && suffix[0] != '/')
+	{
+		root += "/";
+	}
+	
+	std::string full_path = root + suffix;
 	return (full_path);
 }
 
+bool	RequestHandler::isCgiRequest(const std::string& physical_path, Config::s_cgi_info& info) const
+{
+	const std::map<std::string, Config::s_cgi_info>& cgi_info = _location->getCgiInfo();
+	std::string request_path = physical_path;
+	std::string::size_type query_pos = request_path.find('?');
+	if (query_pos != std::string::npos)
+	{
+		request_path = request_path.substr(0, query_pos);
+	}
+	std::string::size_type pos = request_path.find_last_of('.');
 
-// void RequestHandler::handlePostMethod()
-// {
-	
-// }
+	if (pos == std::string::npos)
+		return (false);
+	std::string extension = request_path.substr(pos);
+	std::map<std::string, Config::s_cgi_info>::const_iterator it = cgi_info.find(extension);
+	if (it == cgi_info.end())
+		return (false);
+	info = it->second;
+	return (true);
+}
+
+void	RequestHandler::handleCgiMethod(const std::string& physical_path)
+{
+	Config::s_cgi_info info;
+
+	if (!isCgiRequest(physical_path, info))
+	{
+		_handler_error_code = NOT_FOUND;
+		return ;
+	}
+	if (info.exec_path.empty())
+	{
+		_handler_error_code = NOT_IMPLEMENTED;
+		return ;
+	}
+	if (access(physical_path.c_str(), R_OK) != 0 || access(info.exec_path.c_str(), X_OK) != 0)
+	{
+		_handler_error_code = FORBIDDEN;
+		return ;
+	}
+	try
+	{
+		if (_cgi_handler)
+		{
+			delete _cgi_handler;
+			_cgi_handler = NULL;
+		}
+		_cgi_handler = new CGIHandler(info.exec_path, physical_path);
+		_cgi_handler->executeAsync(_httpRequest);
+		_cgi_process_pid = _cgi_handler->getActivePid();
+		_cgi_start_time = _cgi_handler->getStartTime();
+		_res_state = RES_CGI_WAITING;
+	}
+	catch (std::exception&)
+	{
+		_handler_error_code = INTERNAL_SERVER_ERROR;
+		if (_cgi_handler)
+		{
+			delete _cgi_handler;
+			_cgi_handler = NULL;
+		}
+	}
+}
+
+
+void RequestHandler::handlePostMethod(const std::string& physical_path)
+{
+	Config::s_cgi_info info;
+
+	if (isCgiRequest(physical_path, info))
+	{
+		handleCgiMethod(physical_path);
+		return ;
+	}
+	_handler_error_code = NOT_IMPLEMENTED;
+}
+
+void RequestHandler::handleDeleteMethod(const std::string& physical_path)
+{
+	struct stat file_stat;
+
+	if (stat(physical_path.c_str(), &file_stat) != 0)
+	{
+		_handler_error_code = NOT_FOUND;
+		return ;
+	}
+	if (S_ISDIR(file_stat.st_mode))
+	{
+		_handler_error_code = FORBIDDEN;
+		return ;
+	}
+	if (access(physical_path.c_str(), W_OK) != 0)
+	{
+		_handler_error_code = FORBIDDEN;
+		return ;
+	}
+	if (unlink(physical_path.c_str()) != 0)
+	{
+		_handler_error_code = INTERNAL_SERVER_ERROR;
+		return ;
+	}
+	_httpResponse.setStatusCode(NO_CONTENT);
+	_httpResponse.addHeader("Content-Length", "0");
+}
 
 void RequestHandler::handleGetMethod(const std::string& physical_path)
 {
+	Config::s_cgi_info info;
 	struct stat file_stat;
 	if (stat(physical_path.c_str(), &file_stat) != 0)
 	{
@@ -461,6 +652,11 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		}
 		if (index_found)
 		{
+			if (isCgiRequest(final_index_path, info))
+			{
+				handleCgiMethod(final_index_path);
+				return ;
+			}
 			struct stat index_stat;
 			stat(final_index_path.c_str(), &index_stat);
 			_file_stream.open(final_index_path.c_str(), std::ios::in | std::ios::binary);
@@ -493,6 +689,11 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 	}
 	else if (S_ISREG(file_stat.st_mode))
 	{
+		if (isCgiRequest(physical_path, info))
+		{
+			handleCgiMethod(physical_path);
+			return ;
+		}
 		_file_stream.open(physical_path.c_str(), std::ios::in | std::ios::binary);
 		if (!_file_stream.is_open())
 		{
@@ -598,4 +799,11 @@ void	RequestHandler::reset(void)
 	}
 	_file_stream.clear();
 	_redirect_target.clear();
+	_cgi_process_pid = -1;
+	_cgi_start_time = 0;
+	if (_cgi_handler)
+	{
+		delete _cgi_handler;
+		_cgi_handler = NULL;
+	}
 }

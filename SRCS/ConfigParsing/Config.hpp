@@ -31,6 +31,7 @@ class	Config
 		bool								upload_allowed;
 		std::string							upload_store;
 		std::map<std::string, s_cgi_info>	cgi_info;
+		std::string					cgi_default_exec_path;
 	
 		//Location only	
 		bool								method_get;

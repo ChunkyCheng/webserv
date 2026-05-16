@@ -21,6 +21,7 @@ class	Server
 	public:
 		void		createClient(int listening_fd);
 		void		deleteClient(int client_fd);
+		void		pollClients(void);
 
 		const std::vector<Location>&	getLocations(void) const;
 	

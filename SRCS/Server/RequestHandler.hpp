@@ -7,12 +7,14 @@
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
 #include "../httpProtocol/HttpStatus.hpp"
+#include "../CGIHandler/CGIHandler.hpp"
 
 enum ResponseState
 {
 	RES_HEADERS,
 	RES_BODY,
-	// RES_CGI_BODY,
+	RES_CGI_WAITING,
+	RES_CGI_BODY,
 	RES_FINISHED
 };
 
@@ -40,7 +42,11 @@ class	RequestHandler
 		std::string		getErrorPagePath(HttpStatus error_code);
 		const Location* getDefaultLocation(void) const;
 		std::string		getNormalPagePath(void);
+		bool			isCgiRequest(const std::string& physical_path, Config::s_cgi_info& info) const;
+		void			handleCgiMethod(const std::string& physical_path);
 		void			handleGetMethod(const std::string& physical_path);
+		void			handlePostMethod(const std::string& physical_path);
+		void			handleDeleteMethod(const std::string& physical_path);
 		std::string		generateAutoindex(const std::string& physical_path, const std::string& uri);
 		HttpStatus		validateRequestLocation(void);
 		HttpStatus		resolveInitialStatus(void);
@@ -53,6 +59,7 @@ class	RequestHandler
 	public:
 		bool			checkRequestComplete(void) const;
 		bool			checkResponseComplete(void) const;
+		bool			isCgiWaiting(void) const;
 		void			processReqData(void);
 		void			continueBuildResponse(void);
 		void			buildResponseData(void);
@@ -72,6 +79,10 @@ class	RequestHandler
 		bool			_should_close_connection;
 		std::ifstream	_file_stream;
 		std::string		_redirect_target;
+		int				_cgi_process_pid;
+		time_t			_cgi_start_time;
+		CGIHandler*		_cgi_handler;
+		static const int CGI_TIMEOUT = 5;
 
 };
 

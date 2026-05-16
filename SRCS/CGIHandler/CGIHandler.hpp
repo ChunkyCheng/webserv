@@ -21,6 +21,11 @@ class CGIHandler
 	private:
 		std::string _interpreterPath;
 		std::string _scriptPath;
+		pid_t _activePid;
+		int _stdoutPipe[2];
+		int _stdinPipe[2];
+		std::string _output;
+		time_t _startTime;
 	
 		// Member Functions
 		void _closePipe(int pipe[2]);
@@ -33,8 +38,17 @@ class CGIHandler
 		CGIHandler(std::string interpreter, std::string script);
 		~CGIHandler();
 
-		// Member Functions
+		// Blocking execution (original)
 		HttpResponse execute(HttpRequest& request);
+		
+		// Async execution methods
+		void executeAsync(HttpRequest& request);
+		bool isProcessFinished(int& exitStatus);
+		std::string collectOutput();
+		HttpResponse parseResponse(const std::string& rawOutput);
+		void killProcess();
+		pid_t getActivePid() const;
+		time_t getStartTime() const;
 };
 
 #endif

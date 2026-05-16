@@ -21,6 +21,7 @@ class	Client
 		ClientSocket&	getSocket(void);
 		void			recvMessage(void);
 		void			sendMessage(void);
+		void			pollResponse(void);
 
 	private:
 		ClientSocket	_socket;

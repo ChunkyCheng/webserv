@@ -14,6 +14,11 @@
 #include "IndexDirective.hpp"
 #include "AutoindexDirective.hpp"
 
+// CGI directive headers
+#include "CgiDirective.hpp"
+#include "CgiExtensionDirective.hpp"
+#include "CgiPathDirective.hpp"
+
 #include <memory>
 
 static ADirective*	createServer(void)
@@ -30,6 +35,22 @@ static ADirective*	createErrorPage(void)
 {
 	return (new ErrorPageDirective());
 }
+
+static ADirective* createCgi(void)
+{
+    return (new CgiDirective());
+}
+
+static ADirective* createCgiExtension(void)
+{
+    return (new CgiExtensionDirective());
+}
+
+static ADirective* createCgiPath(void)
+{
+    return (new CgiPathDirective());
+}
+
 
 static ADirective*	createListen(void)
 {
@@ -80,6 +101,9 @@ DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 	map["root"]					= &createRoot;
 	map["index"]				= &createIndex;
 	map["autoindex"]			= &createAutoindex;
+	map["cgi"]					= &createCgi;
+	map["cgi_extension"]		= &createCgiExtension;
+	map["cgi_path"]				= &createCgiPath;
 	return (map);
 }
 

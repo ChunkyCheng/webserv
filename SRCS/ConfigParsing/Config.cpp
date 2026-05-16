@@ -6,6 +6,7 @@ Config::Config(void)
 	 root("/var/www/html"),
 	 autoindex(false),
 	 upload_allowed(false),
+	 cgi_default_exec_path(""),
 	 method_get(false),
 	 method_post(false),
 	 method_delete(false)
@@ -22,6 +23,7 @@ Config::Config(const Config& other)
 	 upload_allowed(other.upload_allowed),
 	 upload_store(other.upload_store),
 	 cgi_info(other.cgi_info),
+	 cgi_default_exec_path(other.cgi_default_exec_path),
 	 method_get(other.method_get),
 	 method_post(other.method_post),
 	 method_delete(other.method_delete),
@@ -42,6 +44,7 @@ Config&	Config::operator=(const Config& other)
 		upload_allowed = other.upload_allowed;
 		upload_store = other.upload_store;
 		cgi_info = other.cgi_info;
+		cgi_default_exec_path = other.cgi_default_exec_path;
 		method_get = other.method_get;
 		method_post = other.method_post;
 		method_delete = other.method_delete;
@@ -50,6 +53,4 @@ Config&	Config::operator=(const Config& other)
 	return (*this);
 }
 
-Config::~Config(void)
-{
-}
+Config::~Config(void) {}

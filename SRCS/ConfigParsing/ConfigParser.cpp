@@ -16,8 +16,7 @@ ConfigParser::ConfigParser(std::string file_path)
 	infile.open(file_path.c_str());
 	if (!infile.is_open())
 	{
-		std::cerr << "Error: Failed to open \"" << file_path << "\"" << std::endl;
-		return ;
+		throw (std::runtime_error("Error: Failed to open \"" + file_path + "\""));
 	}
 	_tokenize(infile);
 }
@@ -102,6 +101,8 @@ void	ConfigParser::printTokens(void) const
 
 void	ConfigParser::parseTokens(void)
 {
+	if (_tokens.empty())
+		throw (std::runtime_error("Error: empty configuration token stream"));
 	while (_tokens.front().type != EOF_TOK)
 	{
 		_directives.push_back

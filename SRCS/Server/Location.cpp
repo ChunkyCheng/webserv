@@ -80,6 +80,11 @@ const std::map<int, std::string>&	Location::getErrorPages(void) const
 	return (_config.error_pages);
 }
 
+const std::map<std::string, Config::s_cgi_info>& Location::getCgiInfo(void) const
+{
+	return (_config.cgi_info);
+}
+
 bool	Location::isMethodAllowed(const std::string& method) const
 {
 	if (method == "GET")

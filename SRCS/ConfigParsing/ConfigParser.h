@@ -22,6 +22,9 @@
 # define INDEX_RULES			(ADirective::s_rules){ALL_BLOCK, 2, INT_MAX, false}
 # define AUTOINDEX_RULES		(ADirective::s_rules){ALL_BLOCK, 2, 2, false}
 # define CGI_RULES				(ADirective::s_rules){ALL_BLOCK, 4, 4, false}
+// CGI extension and path directive rules
+# define CGI_EXTENSION_RULES	(ADirective::s_rules){ALL_BLOCK, 2, 2, true}
+# define CGI_PATH_RULES			(ADirective::s_rules){ALL_BLOCK, 2, 2, false}
 # define SERVER_RULES			(ADirective::s_rules){HTTP, 1, 1, true}
 # define LOCATION_RULES			(ADirective::s_rules){SERVER, 2, 2, true}
 # define LISTEN_RULES			(ADirective::s_rules){SERVER, 2, 2, true}

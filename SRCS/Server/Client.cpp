@@ -37,7 +37,10 @@ void	Client::recvMessage(void)
 		if (_requestHandler.checkRequestComplete())
 		{
 			_requestHandler.buildResponseData();
-			_epoll.modAddSendEvent(_socket);
+			if (_requestHandler.isCgiWaiting())
+				_epoll.modRemoveSendEvent(_socket);
+			else
+				_epoll.modAddSendEvent(_socket);
 		}
 	}
 }
@@ -47,7 +50,14 @@ void	Client::sendMessage(void)
 	int	len;
 
 	if (_response_buff.size() == 0)
+	{
+		if (_requestHandler.isCgiWaiting())
+		{
+			_epoll.modRemoveSendEvent(_socket);
+			return;
+		}
 		_requestHandler.continueBuildResponse();
+	}
 	if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
 	{
 		_requestHandler.reset();
@@ -58,4 +68,13 @@ void	Client::sendMessage(void)
 		std::cerr << strerror(errno) << std::endl;
 	else
 		_response_buff.erase(0, len);
+}
+
+void	Client::pollResponse(void)
+{
+	if (!_requestHandler.isCgiWaiting())
+		return ;
+	_requestHandler.continueBuildResponse();
+	if (_requestHandler.checkResponseComplete() && !_response_buff.empty())
+		_epoll.modAddSendEvent(_socket);
 }

@@ -12,7 +12,7 @@ enum ResponseState
 {
 	RES_HEADERS,
 	RES_BODY,
-	// RES_CGI_BODY,
+	RES_CGI_BODY,
 	RES_FINISHED
 };
 
@@ -21,6 +21,8 @@ enum RequestState
 	REQ_READING_HEADERS,
 	REQ_READING_BODY,
 	REQ_COMPLETE,
+	// REQ_WAITING_CGI,
+	// REQ_READY_TO_SEND,
 	REQ_ERROR
 };
 

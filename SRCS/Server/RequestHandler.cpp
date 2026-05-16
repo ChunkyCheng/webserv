@@ -109,6 +109,24 @@ void	RequestHandler::buildResponseData(void)
 	assembleFinalBuffer();
 }
 
+// void	RequestHandler::buildResponseData(void)
+// {
+// 	HttpStatus status = resolveInitialStatus();
+// 	evaluateConnectionState(status);
+// 	if (_is_cgi)
+// 	{
+// 		executecgi();
+// 		_req_state = REQ_WAITING_CGI;
+// 		return ;
+// 	}
+// 	else
+// 	{
+// 		executeMethod();
+// 		assembleFinalBuffer();
+// 		_req_state = REQ_READY_TO_SEND;
+// 	}
+// }
+
 void	RequestHandler::continueBuildResponse(void)
 {
 	if (_res_state == RES_HEADERS)
@@ -154,6 +172,42 @@ void	RequestHandler::continueBuildResponse(void)
 // ==============================================================================
 // BUILDRESPONSEDATA PRIVATE FUNCTIONS
 // ==============================================================================
+
+HttpStatus	RequestHandler::executeMethod()
+{
+		std::string physical_path = getNormalPagePath();
+		// if (_is_cgi)
+		// {
+		// 	int read_pipe_fd = CGI.executeCGI(_httpRequest, physical_path, _httpResponse);
+		// 	if (read_pipe_fd < 0)
+		// 	{
+		// 		return (INTERNAL_SERVER_ERROR);
+		// 	}
+		// 	_cgi_read_pipe_fd = read_pipe_fd;
+		// 	return (WAITING FOR CGI);
+		// }
+		// else
+		// {
+			std::string method = _httpRequest.getMethod();
+			if (method == "GET")
+			{
+				handleGetMethod(physical_path);
+			}
+			else if (method == "POST")
+			{
+				handlePostMethod(physical_path);
+			}
+			else if (method == "DELETE")
+			{
+				handleDeleteMethod(physical_path);
+			}
+			else
+			{
+				return (METHOD_NOT_ALLOWED);
+			}
+			return (_handler_error_code != NONE ? _handler_error_code : NONE);
+		// }
+}
 
 void	RequestHandler::handlePostMethod(const std::string& physical_path)
 {
@@ -215,36 +269,6 @@ void	RequestHandler::buildErrorOrRedirectResponse(HttpStatus status)
 		readFileContent(physical_path, body_content);
 		_httpResponse.buildErrorPage(status, body_content);
 	}
-}
-
-HttpStatus	RequestHandler::executeMethod()
-{
-		std::string physical_path = getNormalPagePath();
-		// if (_is_cgi)
-		// {
-		// 	_handler_error_code = CGI.executeCGI(_httpRequest, physical_path, _httpResponse);
-		// }
-		// else
-		// {
-			std::string method = _httpRequest.getMethod();
-			if (method == "GET")
-			{
-				handleGetMethod(physical_path);
-			}
-			else if (method == "POST")
-			{
-				handlePostMethod(physical_path);
-			}
-			else if (method == "DELETE")
-			{
-				handleDeleteMethod(physical_path);
-			}
-			else
-			{
-				return (METHOD_NOT_ALLOWED);
-			}
-			return (_handler_error_code != NONE ? _handler_error_code : NONE);
-		// }
 }
 
 

@@ -11,6 +11,7 @@ DIRECTIVE_FILES	=	ServerDirective.cpp				LocationDirective.cpp		\
 					MethodsDirective.cpp			RootDirective.cpp			\
 					IndexDirective.cpp				AutoindexDirective.cpp		\
 					ClientMaxDirective.cpp			ReturnDirective.cpp			\
+					UploadDirective.cpp				UploadStoreDirective.cpp	\
 					CgiDirective.cpp
 
 SERVER_DIR		=	Server

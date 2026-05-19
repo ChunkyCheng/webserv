@@ -26,6 +26,8 @@ class	Location
 		const std::vector<std::string>&				getIndex(void) const;
 		const bool&									isAutoindex(void) const;
 		const std::map<int, std::string>&			getErrorPages(void) const;
+		const bool&									isUploadAllowed(void) const;
+		const std::string&							getUploadStore(void) const;
 		const std::map<std::string, std::string>&	getCgiMap(void) const;
 
 	private:

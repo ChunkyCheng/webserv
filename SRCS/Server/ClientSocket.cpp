@@ -19,8 +19,8 @@ int	ClientSocket::getFd(void) const
 
 void	ClientSocket::handleEvent(int events)
 {
-	if (events & EPOLLIN)
-		_client.recvMessage();
 	if (events & EPOLLOUT)
 		_client.sendMessage();
+	if (events & EPOLLIN)
+		_client.recvMessage();
 }

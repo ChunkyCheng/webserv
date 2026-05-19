@@ -91,6 +91,21 @@ bool	Location::isMethodAllowed(const std::string& method) const
 	return (false);
 }
 
+const bool&	Location::isUploadAllowed(void) const
+{
+	return (_config.upload_allowed);
+}
+
+const std::string& Location::getUploadStore(void) const
+{
+	return (_config.upload_store);
+}
+
+const std::map<std::string, std::string>& Location::getCgiMap(void) const
+{
+	return (_config.cgi_map);
+}
+
 std::ostream&	operator<<(std::ostream& os, const Location& obj)
 {
 	os << "Prefix: " << obj.getPrefix() << "\n";
@@ -113,6 +128,13 @@ std::ostream&	operator<<(std::ostream& os, const Location& obj)
 		os << "on" << "\n";
 	else
 		os << "off" << "\n";
-	os << "Error pages: " << obj.getErrorPages();
+	os << "Upload: ";
+	if (obj.isUploadAllowed())
+		os << "on" << "\n";
+	else
+		os << "off" << "\n";
+	os << "Upload store: " << obj.getUploadStore() << "\n";
+	os << "Error pages: " << obj.getErrorPages() << "\n";
+	os << "Cgi mapping: " << obj.getCgiMap();
 	return (os);
 }

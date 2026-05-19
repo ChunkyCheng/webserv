@@ -11,9 +11,11 @@ PARSE_FILES		=	ConfigParser.cpp		ADirective.cpp			ADirectiveBlock.cpp	\
 DIRECTIVE_DIR	=	$(PARSE_DIR)/directives
 DIRECTIVE_FILES	=	ServerDirective.cpp				LocationDirective.cpp		\
 					ErrorPageDirective.cpp			ListenDirective.cpp			\
-					MethodsDirective.cpp				RootDirective.cpp		\
+					MethodsDirective.cpp			RootDirective.cpp			\
 					IndexDirective.cpp				AutoindexDirective.cpp		\
-					ClientMaxDirective.cpp			ReturnDirective.cpp
+					ClientMaxDirective.cpp			ReturnDirective.cpp			\
+					UploadDirective.cpp				UploadStoreDirective.cpp	\
+					CgiDirective.cpp
 
 SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\

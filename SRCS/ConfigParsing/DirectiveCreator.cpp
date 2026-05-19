@@ -13,11 +13,9 @@
 #include "RootDirective.hpp"
 #include "IndexDirective.hpp"
 #include "AutoindexDirective.hpp"
-
-// CGI directive headers
+#include "UploadDirective.hpp"
+#include "UploadStoreDirective.hpp"
 #include "CgiDirective.hpp"
-#include "CgiExtensionDirective.hpp"
-#include "CgiPathDirective.hpp"
 
 #include <memory>
 
@@ -87,6 +85,21 @@ static ADirective*	createAutoindex(void)
 	return (new AutoindexDirective());
 }
 
+static ADirective* createUpload(void)
+{
+	return (new UploadDirective());
+}
+
+static ADirective* createUploadStore(void)
+{
+	return (new UploadStoreDirective());
+}
+
+static ADirective* createCgi(void)
+{
+	return (new CgiDirective());
+}
+
 DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 {
 	t_creator_map	map;
@@ -101,9 +114,9 @@ DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 	map["root"]					= &createRoot;
 	map["index"]				= &createIndex;
 	map["autoindex"]			= &createAutoindex;
+	map["upload"]				= &createUpload;
+	map["upload_store"]			= &createUploadStore;
 	map["cgi"]					= &createCgi;
-	map["cgi_extension"]		= &createCgiExtension;
-	map["cgi_path"]				= &createCgiPath;
 	return (map);
 }
 

@@ -16,11 +16,6 @@ class	Config
 			int			code;
 			std::string	target;
 		};
-		struct s_cgi_info
-		{
-			std::string	exec_path;
-			std::string	script_dir;
-		};
 
 		s_return							return_info;
 		unsigned long long					client_max_body_size;
@@ -30,8 +25,7 @@ class	Config
 		std::map<int, std::string>			error_pages;
 		bool								upload_allowed;
 		std::string							upload_store;
-		std::map<std::string, s_cgi_info>	cgi_info;
-		std::string					cgi_default_exec_path;
+		std::map<std::string, std::string>	cgi_map;
 	
 		//Location only	
 		bool								method_get;

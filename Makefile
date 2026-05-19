@@ -1,21 +1,18 @@
 CXX			=	c++
 CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g3 #-fsanitize=address
 
-HTTP_DIR	=	httpProtocol
-HTTP_FILES	=	HttpRequest.cpp			HttpResponse.cpp
-
 PARSE_DIR		=	ConfigParsing
 PARSE_FILES		=	ConfigParser.cpp		ADirective.cpp			ADirectiveBlock.cpp	\
 					Config.cpp				DirectiveCreator.cpp	ConfigExcept.cpp
 
 DIRECTIVE_DIR	=	$(PARSE_DIR)/directives
 DIRECTIVE_FILES	=	ServerDirective.cpp				LocationDirective.cpp		\
-				ErrorPageDirective.cpp			ListenDirective.cpp		\
-				MethodsDirective.cpp			RootDirective.cpp		\
-				IndexDirective.cpp			AutoindexDirective.cpp		\
-				ClientMaxDirective.cpp			ReturnDirective.cpp		\
-				CgiDirective.cpp			CgiExtensionDirective.cpp	\
-				CgiPathDirective.cpp
+					ErrorPageDirective.cpp			ListenDirective.cpp			\
+					MethodsDirective.cpp			RootDirective.cpp			\
+					IndexDirective.cpp				AutoindexDirective.cpp		\
+					ClientMaxDirective.cpp			ReturnDirective.cpp			\
+					UploadDirective.cpp				UploadStoreDirective.cpp	\
+					CgiDirective.cpp
 
 SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
@@ -26,10 +23,7 @@ SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 
 UTILS_DIR		=	utils
 
-CGI_DIR			=	CGIHandler
-CGI_FILES		=	CGIHandler.cpp
-
-MODULES		=	PARSE	DIRECTIVE	SERVER	HTTP	UTILS	CGI
+MODULES		=	PARSE	DIRECTIVE	SERVER UTILS
 
 $(foreach M,$(MODULES), $(eval $(M)_SRCS = $(addprefix $($(M)_DIR)/, $($(M)_FILES))))
 
@@ -116,7 +110,6 @@ fclean: clean
 	@if [ -f $(NAME) ]; then						\
 		rm -f $(NAME);								\
 		printf "Removed $(NAME)\n";					\
-		if [ -d $(OBJ_DIR) ]; then rm -rf $(OBJ_DIR); fi; \
 	else											\
 		printf "$(NAME) not found\n"; fi;
 	@printf "$(RESET)"

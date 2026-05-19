@@ -17,18 +17,20 @@ class	Location
 		Location(void);
 
 	public:
-		const std::string&					getPrefix(void) const;
-		const int&							getReturnCode(void) const;
-		const std::string&					getReturnTarget(void) const;
-		const bool&							isGet(void) const;
-		const bool&							isPost(void) const;
-		const bool&							isDelete(void) const;
-		const unsigned long long&			getClientMaxBodySize(void) const;
-		const std::string&					getRoot(void) const;
-		const std::vector<std::string>&		getIndex(void) const;
-		const bool&							isAutoindex(void) const;
-		const std::map<int, std::string>&	getErrorPages(void) const;
-		const std::map<std::string, Config::s_cgi_info>& getCgiInfo(void) const;
+		const std::string&							getPrefix(void) const;
+		const int&									getReturnCode(void) const;
+		const std::string&							getReturnTarget(void) const;
+		const bool&									isGet(void) const;
+		const bool&									isPost(void) const;
+		const bool&									isDelete(void) const;
+		const unsigned long long&					getClientMaxBodySize(void) const;
+		const std::string&							getRoot(void) const;
+		const std::vector<std::string>&				getIndex(void) const;
+		const bool&									isAutoindex(void) const;
+		const std::map<int, std::string>&			getErrorPages(void) const;
+		const bool&									isUploadAllowed(void) const;
+		const std::string&							getUploadStore(void) const;
+		const std::map<std::string, std::string>&	getCgiMap(void) const;
 
 	private:
 		std::string	_prefix;

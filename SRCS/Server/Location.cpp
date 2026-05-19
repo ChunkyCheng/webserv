@@ -80,6 +80,21 @@ const std::map<int, std::string>&	Location::getErrorPages(void) const
 	return (_config.error_pages);
 }
 
+const bool&	Location::isUploadAllowed(void) const
+{
+	return (_config.upload_allowed);
+}
+
+const std::string& Location::getUploadStore(void) const
+{
+	return (_config.upload_store);
+}
+
+const std::map<std::string, std::string>& Location::getCgiMap(void) const
+{
+	return (_config.cgi_map);
+}
+
 const std::map<std::string, Config::s_cgi_info>& Location::getCgiInfo(void) const
 {
 	return (_config.cgi_info);
@@ -118,6 +133,13 @@ std::ostream&	operator<<(std::ostream& os, const Location& obj)
 		os << "on" << "\n";
 	else
 		os << "off" << "\n";
-	os << "Error pages: " << obj.getErrorPages();
+	os << "Upload: ";
+	if (obj.isUploadAllowed())
+		os << "on" << "\n";
+	else
+		os << "off" << "\n";
+	os << "Upload store: " << obj.getUploadStore() << "\n";
+	os << "Error pages: " << obj.getErrorPages() << "\n";
+	os << "Cgi mapping: " << obj.getCgiMap();
 	return (os);
 }

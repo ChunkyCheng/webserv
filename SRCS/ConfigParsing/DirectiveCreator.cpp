@@ -13,6 +13,7 @@
 #include "RootDirective.hpp"
 #include "IndexDirective.hpp"
 #include "AutoindexDirective.hpp"
+#include "CgiDirective.hpp"
 
 #include <memory>
 
@@ -66,6 +67,11 @@ static ADirective*	createAutoindex(void)
 	return (new AutoindexDirective());
 }
 
+static ADirective* createCgi(void)
+{
+	return (new CgiDirective());
+}
+
 DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 {
 	t_creator_map	map;
@@ -80,6 +86,7 @@ DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 	map["root"]					= &createRoot;
 	map["index"]				= &createIndex;
 	map["autoindex"]			= &createAutoindex;
+	map["cgi"]					= &createCgi;
 	return (map);
 }
 

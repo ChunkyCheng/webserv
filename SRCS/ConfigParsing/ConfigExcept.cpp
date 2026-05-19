@@ -35,6 +35,10 @@ ConfigExcept::ConfigExcept(e_ecode ecode, s_token token, std::string config_path
 		case INVALID_METHOD:
 			ss << "invalid method \"" << token.value << "\"";
 			break ;
+		case INVALID_EXTEN:
+			ss << "extension \"" << token.value << "\" must start with a '.' "
+			   << "and end with its name";
+			break ;
 		case DUPLICATE:
 			ss << "\"" << token.value << "\" directive is duplicate";
 			break ;

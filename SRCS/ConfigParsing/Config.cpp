@@ -21,7 +21,7 @@ Config::Config(const Config& other)
 	 error_pages(other.error_pages),
 	 upload_allowed(other.upload_allowed),
 	 upload_store(other.upload_store),
-	 cgi_info(other.cgi_info),
+	 cgi_map(other.cgi_map),
 	 method_get(other.method_get),
 	 method_post(other.method_post),
 	 method_delete(other.method_delete),
@@ -41,7 +41,7 @@ Config&	Config::operator=(const Config& other)
 		error_pages = other.error_pages;
 		upload_allowed = other.upload_allowed;
 		upload_store = other.upload_store;
-		cgi_info = other.cgi_info;
+		cgi_map = other.cgi_map;
 		method_get = other.method_get;
 		method_post = other.method_post;
 		method_delete = other.method_delete;

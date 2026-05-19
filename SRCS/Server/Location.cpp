@@ -80,6 +80,11 @@ const std::map<int, std::string>&	Location::getErrorPages(void) const
 	return (_config.error_pages);
 }
 
+const std::map<std::string, std::string>& Location::getCgiMap(void) const
+{
+	return (_config.cgi_map);
+}
+
 std::ostream&	operator<<(std::ostream& os, const Location& obj)
 {
 	os << "Prefix: " << obj.getPrefix() << "\n";
@@ -102,6 +107,7 @@ std::ostream&	operator<<(std::ostream& os, const Location& obj)
 		os << "on" << "\n";
 	else
 		os << "off" << "\n";
-	os << "Error pages: " << obj.getErrorPages();
+	os << "Error pages: " << obj.getErrorPages() << "\n";
+	os << "Cgi mapping: " << obj.getCgiMap();
 	return (os);
 }

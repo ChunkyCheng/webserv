@@ -1,5 +1,4 @@
 webserv
-*.o
-.*
-!.gitignore
+*.0
 OBJS/
+var/www/

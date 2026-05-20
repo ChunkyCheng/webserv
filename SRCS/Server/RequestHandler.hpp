@@ -53,6 +53,12 @@ class	RequestHandler
 		bool			isCgiExtension(std::string& ext);
 		void			handlePostMethod(const std::string& physical_path);
 
+		/* Upload helpers */
+		std::string		buildSafeUploadPath(const std::string& physical_path, const std::string& suggested_filename = "") const;
+		bool			parseMultipartFile(const std::string& body, const std::map<std::string, std::string>& headers, std::string& out_filename, std::string& out_filecontent) const;
+		bool			ensureDirExists(const std::string& dir_path) const;
+		std::string		sanitizeFilename(const std::string& filename) const;
+
 
 	public:
 		bool			checkRequestComplete(void) const;

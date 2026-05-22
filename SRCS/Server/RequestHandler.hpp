@@ -67,6 +67,7 @@ class	RequestHandler
 		void			continueBuildResponse(void);
 		void			buildResponseData(void);
 		void			reset(void);
+		bool			getShouldCloseConnection(void) const;
 
 	protected:
 	private:

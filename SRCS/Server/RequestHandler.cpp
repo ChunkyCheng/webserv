@@ -820,7 +820,7 @@ bool	RequestHandler::getShouldCloseConnection(void) const
 	return (_should_close_connection);
 }
 
-std::string getPathOnly(const std::string& uri)
+std::string RequestHandler::getPathOnly(const std::string& uri)
 {
 	size_t pos = uri.find_first_of("?#");
 	if (pos == std::string::npos)

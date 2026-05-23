@@ -52,6 +52,7 @@ class	RequestHandler
 		void			handleDeleteMethod(const std::string& physical_path);
 		bool			isCgiExtension(std::string& ext);
 		void			handlePostMethod(const std::string& physical_path);
+		std::string		getPathOnly(const std::string& uri);
 
 		/* Upload helpers */
 		std::string		buildSafeUploadPath(const std::string& physical_path, const std::string& suggested_filename = "") const;

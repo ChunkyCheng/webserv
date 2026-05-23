@@ -10,6 +10,7 @@
 #include <cerrno>
 #include <cstring>
 
+
 RequestHandler::RequestHandler(Server& server,
 std::string& req_buff, std::string& res_buff)
 	: _server(server),
@@ -485,7 +486,7 @@ void	RequestHandler::evaluateConnectionState(HttpStatus status)
 
 HttpStatus RequestHandler::validateRequestLocation()
 {
-	std::string uri = _httpRequest.getPath();
+	std::string uri = getPathOnly(_httpRequest.getPath());
 	std::cout << "PATH: " << uri << "\n";
 	const std::vector<Location>& bookshelf = _server.getLocations();
 	_location = matchLocation(uri, bookshelf);
@@ -598,7 +599,7 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 std::string RequestHandler::getNormalPagePath(void)
 {
 	std::string root = _location->getRoot();
-	std::string uri = _httpRequest.getPath();
+	std::string uri = getPathOnly(_httpRequest.getPath());
 	if (!root.empty() && root[root.length() - 1] == '/' && !uri.empty() && uri[0] == '/')
 	{
 		root.erase(root.length() - 1);
@@ -647,10 +648,12 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 	if (S_ISDIR(file_stat.st_mode))
 	{
 		std::string uri = _httpRequest.getPath();
-		if (!uri.empty() && uri[uri.length() - 1] != '/')
+		std::string path = getPathOnly(uri);
+		if (!path.empty() && path[path.length() - 1] != '/')
 		{
 			_handler_error_code = MOVED_PERMANENTLY;
-			_redirect_target = uri + "/";
+			std::string query_and_frag = uri.substr(path.length());
+			_redirect_target = path + "/" + query_and_frag;
 			return;
 		}
 		bool index_found = false;
@@ -684,7 +687,7 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		{
 			if (_location->isAutoindex())
 			{
-				std::string autoindex_body = generateAutoindex(physical_path, uri);
+				std::string autoindex_body = generateAutoindex(physical_path, path);
 				if (autoindex_body.empty())
 				{
 					_handler_error_code = FORBIDDEN;
@@ -778,13 +781,18 @@ std::string	RequestHandler::generateAutoindex(const std::string& physical_path, 
 	return (html);
 }
 
-const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)
+const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& locations)
 {
-	for (size_t i = 0; i < location.size(); ++i)
+	for (size_t i = 0; i < locations.size(); ++i)
 	{
-		if (request_uri.find(location[i].getPrefix()) == 0)
+		const std::string& prefix = locations[i].getPrefix();
+		if (request_uri.compare(0, prefix.size(), prefix) != 0)
+			continue;
+		if (request_uri.size() == prefix.size()
+			|| prefix[prefix.size() - 1] == '/'
+			|| request_uri[prefix.size()] == '/')
 		{
-			return &location[i];
+			return (&locations[i]);
 		}
 	}
 	return (NULL);
@@ -810,4 +818,12 @@ void	RequestHandler::reset(void)
 bool	RequestHandler::getShouldCloseConnection(void) const
 {
 	return (_should_close_connection);
+}
+
+std::string getPathOnly(const std::string& uri)
+{
+	size_t pos = uri.find_first_of("?#");
+	if (pos == std::string::npos)
+		return uri;
+	return uri.substr(0, pos);
 }

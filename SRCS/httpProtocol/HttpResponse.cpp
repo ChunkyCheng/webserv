@@ -36,6 +36,9 @@ void	HttpResponse::setStatusCode(HttpStatus status_code)
 		case OK:
 			_reason_phrase = "OK";
 			break;
+		case CREATED:
+			_reason_phrase = "Created";
+			break;
 		case NO_CONTENT:
 			_reason_phrase = "No Content";
 			break;
@@ -210,6 +213,11 @@ std::string HttpResponse::getMimeType(const std::string& path)
 		return "text/plain"; 
 
 	std::string ext = path.substr(dotPos);
+
+	for (size_t i = 0; i < ext.length(); ++i)
+	{
+		ext[i] = std::tolower(static_cast<unsigned char>(ext[i]));
+	}
 
 	if (ext == ".html" || ext == ".htm") return "text/html";
 	if (ext == ".css") return "text/css";

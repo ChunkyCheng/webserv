@@ -15,6 +15,9 @@
 
 HttpRequest::HttpRequest()
 	: _error_code(NONE),
+	_chunk_state(CHUNK_SIZE),
+	_chunk_size(0),
+	_chunk_bytes_read(0),
 	_content_length(0),
 	_is_chunked(false),
 	_keep_alive(true)
@@ -224,9 +227,17 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 		}
 		key[i] = std::tolower(key[i]);
 	}
+	size_t start = value.find_first_not_of(" \t");
+	if (start == std::string::npos)
+		value = "";
+	else
+	{
+		size_t end = value.find_last_not_of(" \t");
+		value = value.substr(start, end - start + 1);
+	}
 	if (_headers.find(key) != _headers.end())
 	{
-		if (key == "host")
+		if (key == "host" || key == "content-length" || key == "transfer-encoding")
 		{
 			_error_code = BAD_REQUEST;
 			return (false);
@@ -240,10 +251,10 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 
 bool	HttpRequest::parseBody(std::string& req_buff, size_t max_body_size)
 {
-	// if (_is_chunked)
-	// 	return (parseChunkedBody(req_buff, max_body_size));
-	// else
-	// {
+	if (_is_chunked)
+		return (parseChunkedBody(req_buff, max_body_size));
+	else
+	{
 		size_t bytes_needed = _content_length - _body.size();
 		size_t bytes_to_take = std::min(bytes_needed, req_buff.size());
 		if (_body.size() + bytes_to_take > max_body_size)
@@ -261,7 +272,7 @@ bool	HttpRequest::parseBody(std::string& req_buff, size_t max_body_size)
 			return (true);
 		}
 		return (false);
-	// }
+	}
 }
 
 bool	HttpRequest::setupBodyType()
@@ -276,7 +287,12 @@ bool	HttpRequest::setupBodyType()
 	}
 	if (has_te)
 	{
-		if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
+		std::string te_val = _headers["transfer-encoding"];
+		for (size_t i = 0; i < te_val.length(); ++i)
+		{
+			te_val[i] = std::tolower(te_val[i]);
+		}
+		if (te_val.find("chunked") != std::string::npos)
 		{
 			_is_chunked = true;
 			return (true);
@@ -288,118 +304,135 @@ bool	HttpRequest::setupBodyType()
 		return (parseContentLength());
 	return (true);
 }
+// Loop runs as long as three conditions are true: incoming buffer has data, haven't finished parsing (CHUNK_COMPLETE), and no errors have occured
+// Since chunk encoding format is fixed, we always start with checking size first, thus, CHUNK SIZE is triggered
+// 
+bool	HttpRequest::parseChunkedBody(std::string& req_buff, size_t max_body_size)
+{
+	while (!req_buff.empty() && _chunk_state != CHUNK_COMPLETE && _chunk_state != CHUNK_ERROR)
+	{
+		switch (_chunk_state)
+		{
+			case CHUNK_SIZE:
+			{
+				size_t pos = req_buff.find("\r\n");
+				if (pos == std::string::npos)
+				{
+					return (false);
+				}
+				std::string chunked_str = req_buff.substr(0, pos);
+				size_t semi = chunked_str.find(';');
+				if (semi != std::string::npos)
+				{
+					chunked_str = chunked_str.substr(0, semi);
+				}
+				if (chunked_str.empty() || chunked_str.length() > 16)
+				{
+					_chunk_state = CHUNK_ERROR;
+					_error_code = BAD_REQUEST;
+					return (false);
+				}
+				for (size_t i = 0; i < chunked_str.length(); ++i)
+				{
+					if (!std::isxdigit(static_cast<unsigned char>(chunked_str[i])))
+					{
+						_chunk_state = CHUNK_ERROR;
+						_error_code = BAD_REQUEST;
+						return (false);
+					}
+				}
+				std::stringstream ss;
+				ss << std::hex << chunked_str;
+				ss >> _chunk_size;
+				if (ss.fail())
+				{
+					_chunk_state = CHUNK_ERROR;
+					_error_code = BAD_REQUEST;
+					return (false);
+				}
+				req_buff.erase(0, pos + 2);
+				_chunk_bytes_read = 0;
+				if (_chunk_size == 0)
+				{
+					_chunk_state = CHUNK_TRAILER;
+				}
+				else
+				{
+					_chunk_state = CHUNK_DATA;
+				}
+				break;
+			}
 
-// bool	HttpRequest::parseChunkedBody(std::string& req_buff, size_t max_body_size)
-// {
-// 	while (!req_buff.empty() && _chunk_state != CHUNK_COMPLETE && _chunk_state != CHUNK_ERROR)
-// 	{
-// 		switch (_chunk_state)
-// 		{
-// 			case CHUNK_SIZE:
-// 			{
-// 				size_t pos = req_buff.find("\r\n");
-// 				if (pos == std::string::npos)
-// 				{
-// 					return (false);
-// 				}
-// 				std::string chunked_str = req_buff.substr(0, pos);
-// 				size_t semi = chunked_str.find(';');
-// 				if (semi != std::string::npos)
-// 				{
-// 					chunked_str = chunked_str.substr(0, semi);
-// 				}
-// 				std::stringstream ss;
-// 				ss << std::hex << chunked_str;
-// 				ss >> _chunk_size;
-// 				if (ss.fail())
-// 				{
-// 					_chunk_state = CHUNK_ERROR;
-// 					_error_code = BAD_REQUEST;
-// 					return (false);
-// 				}
-// 				req_buff.erase(0, pos + 2);
-// 				_chunk_bytes_read = 0;
-// 				if (_chunk_size == 0)
-// 				{
-// 					_chunk_state = CHUNK_TRAILER;
-// 				}
-// 				else
-// 				{
-// 					_chunk_state = CHUNK_DATA;
-// 				}
-// 				break;
-// 			}
+			case CHUNK_DATA:
+			{
+				size_t bytes_needed = _chunk_size - _chunk_bytes_read;
+				size_t bytes_to_take = std::min(bytes_needed, req_buff.size());
 
-// 			case CHUNK_DATA:
-// 			{
-// 				size_t bytes_needed = _chunk_size - _chunk_bytes_read;
-// 				size_t bytes_to_take = std::min(bytes_needed, req_buff.size());
+				if (bytes_to_take > 0)
+				{
+					if (_body.size() + bytes_to_take > max_body_size)
+					{
+						_chunk_state = CHUNK_ERROR;
+						_error_code = PAYLOAD_TOO_LARGE;
+						return (false);
+					}
+					_body.append(req_buff, 0, bytes_to_take);
+					req_buff.erase(0, bytes_to_take);
+					_chunk_bytes_read += bytes_to_take;
+				}
+				if (_chunk_bytes_read == _chunk_size)
+				{
+					_chunk_state = CHUNK_CRLF;
+				}
+				else
+				{
+					return (false);
+				}
+				break;
+			}
 
-// 				if (bytes_to_take > 0)
-// 				{
-// 					if (_body.size() + bytes_to_take > max_body_size)
-// 					{
-// 						_chunk_state = CHUNK_ERROR;
-// 						_error_code = PAYLOAD_TOO_LARGE;
-// 						return (false);
-// 					}
-// 					_body.append(req_buff, 0, bytes_to_take);
-// 					req_buff.erase(0, bytes_to_take);
-// 					_chunk_bytes_read += bytes_to_take;
-// 				}
-// 				if (_chunk_bytes_read == _chunk_size)
-// 				{
-// 					_chunk_state = CHUNK_CRLF;
-// 				}
-// 				else
-// 				{
-// 					return (false);
-// 				}
-// 				break;
-// 			}
-
-// 			case CHUNK_CRLF:
-// 			{
-// 				if (req_buff.length() < 2)
-// 				{
-// 					return (false);
-// 				}
-// 				if (req_buff.substr(0, 2) != "\r\n")
-// 				{
-// 					_chunk_state = CHUNK_ERROR;
-// 					_error_code = BAD_REQUEST;
-// 					return (false);
-// 				}
-// 				req_buff.erase(0, 2);
-// 				_chunk_state = CHUNK_SIZE;
-// 				break;
-// 			}
+			case CHUNK_CRLF:
+			{
+				if (req_buff.length() < 2)
+				{
+					return (false);
+				}
+				if (req_buff.substr(0, 2) != "\r\n")
+				{
+					_chunk_state = CHUNK_ERROR;
+					_error_code = BAD_REQUEST;
+					return (false);
+				}
+				req_buff.erase(0, 2);
+				_chunk_state = CHUNK_SIZE;
+				break;
+			}
 			
-// 			case CHUNK_TRAILER:
-// 			{
-// 				size_t pos = req_buff.find("\r\n\r\n");
-// 				if (pos == std::string::npos)
-// 				{
-// 					return (false);
-// 				}
-// 				if (pos == 0)
-// 				{
-// 					req_buff.erase(0, 2);
-// 					_content_length = _body.size();
-// 					_chunk_state = CHUNK_COMPLETE;
-// 				}
-// 				else
-// 				{
-// 					req_buff.erase(0, pos + 2);
-// 				}
-// 				break;
-// 			}
-// 			default:
-// 				break;
-// 		}
-// 	}
-// 	return (_chunk_state == CHUNK_COMPLETE);
-// }
+			case CHUNK_TRAILER:
+			{
+				size_t pos = req_buff.find("\r\n");
+				if (pos == std::string::npos)
+				{
+					return (false);
+				}
+				if (pos == 0)
+				{
+					req_buff.erase(0, 2);
+					_content_length = _body.size();
+					_chunk_state = CHUNK_COMPLETE;
+				}
+				else
+				{
+					req_buff.erase(0, pos + 2);
+				}
+				break;
+			}
+			default:
+				break;
+		}
+	}
+	return (_chunk_state == CHUNK_COMPLETE);
+}
 
 bool	HttpRequest::parseContentLength()
 {

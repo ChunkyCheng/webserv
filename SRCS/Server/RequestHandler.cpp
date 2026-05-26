@@ -1,5 +1,6 @@
 #include "RequestHandler.hpp"
 #include <cstdlib>
+#include <cstdio>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fstream>
@@ -163,10 +164,10 @@ HttpStatus	RequestHandler::executeMethod()
 	{
 		handleGetMethod(physical_path);
 	}
-	// else if (method == "POST")
-	// {
-	// 	handlePostMethod(physical_path);
-	// }
+	else if (method == "POST")
+	{
+		handlePostMethod(physical_path);
+	}
 	else if (method == "DELETE")
 	{
 		handleDeleteMethod(physical_path);
@@ -179,254 +180,222 @@ HttpStatus	RequestHandler::executeMethod()
 
 }
 
-// void	RequestHandler::handlePostMethod(const std::string& physical_path)
-// {
-// 	bool upload_enabled = _location->isUploadAllowed();
-// 	if (!upload_enabled)
-// 	{
-// 		_handler_error_code = FORBIDDEN;
-// 		return;
-// 	}
+void	RequestHandler::handlePostMethod(const std::string& physical_path)
+{
+	bool upload_enabled = _location->isUploadAllowed();
+	if (!upload_enabled)
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
 
-// 	std::string filename;
-// 	std::string filecontent;
-// 	std::map<std::string, std::string> headers = _httpRequest.getHeaders();
+	std::string filename;
+	std::string filecontent;
+	std::map<std::string, std::string> headers = _httpRequest.getHeaders();
 
-// 	bool parsed = parseMultipartFile(_httpRequest.getBody(), headers, filename, filecontent);
+	bool parsed = parseMultipartFile(_httpRequest.getBody(), headers, filename, filecontent);
 
-// 	std::string upload_path;
-// 	if (parsed)
-// 	{
-// 		upload_path = buildSafeUploadPath(physical_path, filename);
-// 	}
-// 	else
-// 	{
-// 		upload_path = buildSafeUploadPath(physical_path);
-// 		filecontent = _httpRequest.getBody();
-// 	}
+	std::string upload_path;
+	if (parsed)
+	{
+		upload_path = buildSafeUploadPath(physical_path, filename);
+	}
+	else
+	{
+		upload_path = buildSafeUploadPath(physical_path);
+		filecontent = _httpRequest.getBody();
+	}
 
-// 	// Ensure upload directory exists
-// 	size_t slash = upload_path.find_last_of('/');
-// 	if (slash != std::string::npos)
-// 	{
-// 		std::string dir = upload_path.substr(0, slash);
-// 		if (!ensureDirExists(dir))
-// 		{
-// 			_handler_error_code = FORBIDDEN;
-// 			return;
-// 		}
-// 	}
+	// Ensure upload directory exists
+	size_t slash = upload_path.find_last_of('/');
+	if (slash != std::string::npos)
+	{
+		std::string dir = upload_path.substr(0, slash);
+		if (!ensureDirExists(dir))
+		{
+			_handler_error_code = FORBIDDEN;
+			return;
+		}
+	}
 
-// 	std::ofstream file(upload_path.c_str(), std::ios::out | std::ios::binary);
-// 	if (!file.is_open())
-// 	{
-// 		_handler_error_code = FORBIDDEN;
-// 		return;
-// 	}
-// 	file.write(filecontent.c_str(), filecontent.size());
-// 	if (file.bad())
-// 	{
-// 		_handler_error_code = INTERNAL_SERVER_ERROR;
-// 	}
-// 	else
-// 	{
-// 		_handler_error_code = CREATED;
-// 	}
-// 	file.close();
-// }
+	std::ofstream file(upload_path.c_str(), std::ios::out | std::ios::binary);
+	if (!file.is_open())
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+	file.write(filecontent.c_str(), filecontent.size());
+	if (file.bad())
+	{
+		_handler_error_code = INTERNAL_SERVER_ERROR;
+	}
+	else
+	{
+		_handler_error_code = CREATED;
+	}
+	file.close();
+}
 
-// std::string RequestHandler::buildSafeUploadPath(const std::string& physical_path, const std::string& suggested_filename) const
-// {
-// 	std::string base_dir = _location->getUploadStore();
-// 	if (base_dir.empty())
-// 		base_dir = ".";
+std::string RequestHandler::buildSafeUploadPath(const std::string& physical_path, const std::string& suggested_filename) const
+{
+	std::string base_dir = _location->getUploadStore();
+	if (base_dir.empty())
+		base_dir = ".";
 
-// 	std::string name;
-// 	if (!suggested_filename.empty())
-// 		name = sanitizeFilename(suggested_filename);
-// 	else
-// 	{
-// 		size_t pos = physical_path.find_last_of('/');
-// 		if (pos == std::string::npos)
-// 			name = sanitizeFilename(physical_path);
-// 		else
-// 			name = sanitizeFilename(physical_path.substr(pos + 1));
-// 	}
+	std::string name;
+	if (!suggested_filename.empty())
+		name = sanitizeFilename(suggested_filename);
+	else
+	{
+		size_t pos = physical_path.find_last_of('/');
+		if (pos == std::string::npos)
+			name = sanitizeFilename(physical_path);
+		else
+			name = sanitizeFilename(physical_path.substr(pos + 1));
+	}
 
-// 	if (name.empty())
-// 	{
-// 		// generate fallback name
-// 		std::stringstream ss;
-// 		ss << "upload_" << std::time(NULL) << "_" << getpid();
-// 		name = ss.str();
-// 	}
+	if (name.empty())
+	{
+		// generate fallback name
+		std::stringstream ss;
+		ss << "upload_" << std::time(NULL) << "_" << getpid();
+		name = ss.str();
+	}
 
-// 	// ensure base_dir ends without '/'
-// 	if (!base_dir.empty() && base_dir.back() == '/')
-// 		base_dir.erase(base_dir.length() - 1);
-// 	return (base_dir + "/" + name);
-// }
+	// ensure base_dir ends without '/'
+	if (!base_dir.empty() && base_dir[base_dir.length() - 1] == '/')
+		base_dir.erase(base_dir.length() - 1);
+	return (base_dir + "/" + name);
+}
 
-// bool RequestHandler::ensureDirExists(const std::string& dir_path) const
-// {
-// 	if (dir_path.empty())
-// 		return false;
-// 	struct stat st;
-// 	if (stat(dir_path.c_str(), &st) == 0)
-// 	{
-// 		if (S_ISDIR(st.st_mode))
-// 			return true;
-// 		else
-// 			return false;
-// 	}
-// 	// recursively create parent
-// 	size_t pos = dir_path.find_first_of('/');
-// 	std::string cur = "";
-// 	if (dir_path[0] == '/')
-// 		cur = "/";
-// 	size_t start = 0;
-// 	while (start < dir_path.length())
-// 	{
-// 		size_t next = dir_path.find('/', start);
-// 		std::string part;
-// 		if (next == std::string::npos)
-// 			part = dir_path.substr(start);
-// 		else
-// 			part = dir_path.substr(start, next - start);
-// 		if (!part.empty())
-// 		{
-// 			if (!cur.empty() && cur.back() != '/')
-// 				cur += "/";
-// 			cur += part;
-// 		}
-// 		struct stat st2;
-// 		if (stat(cur.c_str(), &st2) != 0)
-// 		{
-// 			if (mkdir(cur.c_str(), 0755) != 0 && errno != EEXIST)
-// 				return false;
-// 		}
-// 		if (next == std::string::npos)
-// 			break;
-// 		start = next + 1;
-// 	}
-// 	return true;
-// }
+bool RequestHandler::ensureDirExists(const std::string& dir_path) const
+{
+	if (dir_path.empty())
+		return (false);
+	struct stat st;
+	if (stat(dir_path.c_str(), &st) == 0)
+	{
+		if (S_ISDIR(st.st_mode))
+			return (true);
+	}
+	return (false);
+}
 
-// std::string RequestHandler::sanitizeFilename(const std::string& filename) const
-// {
-// 	std::string out;
-// 	for (size_t i = 0; i < filename.size(); ++i)
-// 	{
-// 		char c = filename[i];
-// 		if (c == '/' || c == '\\')
-// 			continue;
-// 		if (c == '.' || c == '_' || c == '-' || std::isalnum(static_cast<unsigned char>(c)))
-// 			out.push_back(c);
-// 		else
-// 			out.push_back('_');
-// 		if (out.size() >= 200)
-// 			break;
-// 	}
-// 	// remove leading dots to avoid hidden files or relative paths
-// 	while (!out.empty() && out[0] == '.')
-// 		out.erase(out.begin());
-// 	return out;
-// }
+std::string RequestHandler::sanitizeFilename(const std::string& filename) const
+{
+	std::string out;
+	for (size_t i = 0; i < filename.size(); ++i)
+	{
+		char c = filename[i];
+		if (c == '/' || c == '\\')
+			continue;
+		if (c == '.' || c == '_' || c == '-' || std::isalnum(static_cast<unsigned char>(c)))
+			out.push_back(c);
+		else
+			out.push_back('_');
+		if (out.size() >= 200)
+			break;
+	}
+	// remove leading dots to avoid hidden files or relative paths
+	while (!out.empty() && out[0] == '.')
+		out.erase(out.begin());
+	return out;
+}
 
-// bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<std::string, std::string>& headers, std::string& out_filename, std::string& out_filecontent) const
-// {
-// 	std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
-// 	if (it == headers.end())
-// 		return false;
-// 	std::string ctype = it->second;
-// 	std::string boundary_key = "boundary=";
-// 	size_t bpos = ctype.find(boundary_key);
-// 	if (bpos == std::string::npos)
-// 		return false;
-// 	std::string boundary = ctype.substr(bpos + boundary_key.length());
-// 	// strip possible quotes
-// 	if (!boundary.empty() && boundary.front() == '"' && boundary.back() == '"')
-// 	{
-// 		boundary = boundary.substr(1, boundary.length() - 2);
-// 	}
-// 	std::string delim = "--" + boundary;
+bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<std::string, std::string>& headers, std::string& out_filename, std::string& out_filecontent) const
+{
+	std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
+	if (it == headers.end())
+		return false;
+	std::string ctype = it->second;
+	std::string boundary_key = "boundary=";
+	size_t bpos = ctype.find(boundary_key);
+	if (bpos == std::string::npos)
+		return false;
+	std::string boundary = ctype.substr(bpos + boundary_key.length());
+	// strip possible quotes
+	if (!boundary.empty() && boundary[0] == '"' && boundary[boundary.length() - 1] == '"')
+	{
+		boundary = boundary.substr(1, boundary.length() - 2);
+	}
+	std::string delim = "--" + boundary;
 
-// 	size_t part_start = body.find(delim);
-// 	if (part_start == std::string::npos)
-// 		return false;
-// 	// move to end of boundary line
-// 	size_t line_end = body.find("\r\n", part_start);
-// 	if (line_end == std::string::npos)
-// 		return false;
-// 	size_t hdr_start = line_end + 2;
-// 	size_t hdr_end = body.find("\r\n\r\n", hdr_start);
-// 	if (hdr_end == std::string::npos)
-// 		return false;
-// 	std::string part_headers = body.substr(hdr_start, hdr_end - hdr_start);
-// 	std::string filename;
-// 	// parse part headers
-// 	size_t pos = 0;
-// 	while (pos < part_headers.size())
-// 	{
-// 		size_t eol = part_headers.find("\r\n", pos);
-// 		std::string line;
-// 		if (eol == std::string::npos)
-// 		{
-// 			line = part_headers.substr(pos);
-// 			pos = part_headers.size();
-// 		}
-// 		else
-// 		{
-// 			line = part_headers.substr(pos, eol - pos);
-// 			pos = eol + 2;
-// 		}
-// 		// look for Content-Disposition
-// 		std::string low = line;
-// 		std::transform(low.begin(), low.end(), low.begin(), ::tolower);
-// 		if (low.find("content-disposition:") == 0)
-// 		{
-// 			size_t fname_pos = line.find("filename=");
-// 			if (fname_pos != std::string::npos)
-// 			{
-// 				size_t q = line.find('"', fname_pos);
-// 				if (q != std::string::npos)
-// 				{
-// 					size_t q2 = line.find('"', q + 1);
-// 					if (q2 != std::string::npos)
-// 						filename = line.substr(q + 1, q2 - q - 1);
-// 				}
-// 				else
-// 				{
-// 					// unquoted value until semicolon or end
-// 					size_t endpos = line.find(';', fname_pos);
-// 					if (endpos == std::string::npos)
-// 						endpos = line.length();
-// 					filename = line.substr(fname_pos + 9, endpos - (fname_pos + 9));
-// 				}
-// 			}
-// 		}
-// 	}
-// 	if (filename.empty())
-// 		return false;
+	size_t part_start = body.find(delim);
+	if (part_start == std::string::npos)
+		return false;
+	// move to end of boundary line
+	size_t line_end = body.find("\r\n", part_start);
+	if (line_end == std::string::npos)
+		return false;
+	size_t hdr_start = line_end + 2;
+	size_t hdr_end = body.find("\r\n\r\n", hdr_start);
+	if (hdr_end == std::string::npos)
+		return false;
+	std::string part_headers = body.substr(hdr_start, hdr_end - hdr_start);
+	std::string filename;
+	// parse part headers
+	size_t pos = 0;
+	while (pos < part_headers.size())
+	{
+		size_t eol = part_headers.find("\r\n", pos);
+		std::string line;
+		if (eol == std::string::npos)
+		{
+			line = part_headers.substr(pos);
+			pos = part_headers.size();
+		}
+		else
+		{
+			line = part_headers.substr(pos, eol - pos);
+			pos = eol + 2;
+		}
+		// look for Content-Disposition
+		std::string low = line;
+		std::transform(low.begin(), low.end(), low.begin(), ::tolower);
+		if (low.find("content-disposition:") == 0)
+		{
+			size_t fname_pos = line.find("filename=");
+			if (fname_pos != std::string::npos)
+			{
+				size_t q = line.find('"', fname_pos);
+				if (q != std::string::npos)
+				{
+					size_t q2 = line.find('"', q + 1);
+					if (q2 != std::string::npos)
+						filename = line.substr(q + 1, q2 - q - 1);
+				}
+				else
+				{
+					// unquoted value until semicolon or end
+					size_t endpos = line.find(';', fname_pos);
+					if (endpos == std::string::npos)
+						endpos = line.length();
+					filename = line.substr(fname_pos + 9, endpos - (fname_pos + 9));
+				}
+			}
+		}
+	}
+	if (filename.empty())
+		return false;
 
-// 	size_t content_start = hdr_end + 4;
-// 	std::string boundary_search = "\r\n" + delim;
-// 	size_t content_end = body.find(boundary_search, content_start);
-// 	if (content_end == std::string::npos)
-// 	{
-// 		// try without preceding CRLF
-// 		content_end = body.find(delim, content_start);
-// 		if (content_end == std::string::npos)
-// 			return false;
-// 	}
-// 	out_filecontent = body.substr(content_start, content_end - content_start);
-// 	// strip trailing CRLF if present
-// 	if (out_filecontent.size() >= 2 && out_filecontent.substr(out_filecontent.size() - 2) == "\r\n")
-// 		out_filecontent.erase(out_filecontent.size() - 2);
+	size_t content_start = hdr_end + 4;
+	std::string boundary_search = "\r\n" + delim;
+	size_t content_end = body.find(boundary_search, content_start);
+	if (content_end == std::string::npos)
+	{
+		// try without preceding CRLF
+		content_end = body.find(delim, content_start);
+		if (content_end == std::string::npos)
+			return false;
+	}
+	out_filecontent = body.substr(content_start, content_end - content_start);
+	// strip trailing CRLF if present
+	if (out_filecontent.size() >= 2 && out_filecontent.substr(out_filecontent.size() - 2) == "\r\n")
+		out_filecontent.erase(out_filecontent.size() - 2);
 
-// 	out_filename = filename;
-// 	return true;
-// }
+	out_filename = filename;
+	return true;
+}
 
 void RequestHandler::assembleFinalBuffer()
 {
@@ -609,20 +578,28 @@ std::string RequestHandler::getNormalPagePath(void)
 	return (full_path);
 }
 
-
 void RequestHandler::handleDeleteMethod(const std::string& physical_path)
 {
-	if (access(physical_path.c_str(), F_OK) != 0)
+	struct stat file_stat;
+	if (stat(physical_path.c_str(), &file_stat) != 0)
 	{
 		_handler_error_code = NOT_FOUND;
 		return;
 	}
+
+	if (S_ISDIR(file_stat.st_mode))
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+
 	if (access(physical_path.c_str(), W_OK) != 0)
 	{
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
-	if (unlink(physical_path.c_str()) == 0)
+
+	if (std::remove(physical_path.c_str()) == 0)
 	{
 		_handler_error_code = NO_CONTENT;
 	}
@@ -661,7 +638,17 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		const std::vector<std::string>& index = _location->getIndex();
 		for (size_t i = 0; i < index.size(); ++i)
 		{
-			std::string test_path = physical_path + index[i];
+			std::string test_path = physical_path;
+			if (!test_path.empty() && test_path[test_path.length() - 1] != '/')
+			{
+				test_path += "/";
+			}
+			std::string index_file = index[i];
+			if (!index_file.empty() && index_file[0] == '/')
+			{
+				index_file.erase(0, 1);
+			}
+			test_path += index_file;
 			if (access(test_path.c_str(), R_OK) == 0)
 			{
 				index_found = true;
@@ -820,10 +807,43 @@ bool	RequestHandler::getShouldCloseConnection(void) const
 	return (_should_close_connection);
 }
 
+static std::string normalizePath(const std::string& path)
+{
+	std::vector<std::string> segments;
+	std::stringstream ss(path);
+	std::string segment;
+	while (std::getline(ss, segment, '/'))
+	{
+		if (segment == "" || segment == ".")
+			continue;
+		if (segment == "..")
+		{
+			if (!segments.empty())
+				segments.pop_back();
+		}
+		else
+		{
+			segments.push_back(segment);
+		}
+	}
+	
+	std::string result = "";
+	for (size_t i = 0; i < segments.size(); ++i)
+	{
+		result += "/" + segments[i];
+	}
+	if (result.empty())
+		result = "/";
+		
+	// If this is a directory, second condition is true, same as the last, so will append /images/ for example
+	if (path.length() > 0 && path[path.length() - 1] == '/' && result != "/")
+		result += "/";
+	return (result);
+}
+
 std::string RequestHandler::getPathOnly(const std::string& uri)
 {
 	size_t pos = uri.find_first_of("?#");
-	if (pos == std::string::npos)
-		return uri;
-	return uri.substr(0, pos);
+	std::string path = (pos == std::string::npos) ? uri : uri.substr(0, pos);
+	return (normalizePath(path));
 }

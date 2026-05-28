@@ -26,7 +26,7 @@ class	Config
 		bool								upload_allowed;
 		std::string							upload_store;
 		std::map<std::string, std::string>	cgi_map;
-	
+
 		//Location only	
 		bool								method_get;
 		bool								method_post;

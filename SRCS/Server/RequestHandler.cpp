@@ -219,6 +219,7 @@ void	RequestHandler::handlePostMethod(const std::string& physical_path)
 	}
 
 	std::ofstream file(upload_path.c_str(), std::ios::out | std::ios::binary);
+	std::cout << upload_path << std::endl;
 	if (!file.is_open())
 	{
 		_handler_error_code = FORBIDDEN;
@@ -400,9 +401,9 @@ bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<
 void RequestHandler::assembleFinalBuffer()
 {
 	if (_should_close_connection)
-		_httpResponse.addHeader("Connection", "close");
+		_httpResponse.overwriteHeader("Connection", "close");
 	else
-		_httpResponse.addHeader("Connection", "keep-alive");
+		_httpResponse.overwriteHeader("Connection", "keep-alive");
 	_response_buff = _httpResponse.getFormattedHeaders();
 	const std::string& memory_body = _httpResponse.getBody();
 	if (!memory_body.empty())

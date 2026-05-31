@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   HttpResponse.hpp                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/04/07 14:44:49 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/28 18:23:46 by yelu             ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef HTTP_RESPONSE
 #define HTTP_RESPONSE
 
@@ -24,9 +12,6 @@ class HttpRequest;
 class HttpResponse
 {
 	private:
-		HttpResponse(const HttpResponse& other);
-		HttpResponse& operator=(const HttpResponse& other);
-
 		std::string								_version;
 		HttpStatus								_status_code;
 		std::string								_reason_phrase;
@@ -35,6 +20,8 @@ class HttpResponse
 
 	public:
 		HttpResponse();
+		HttpResponse(const HttpResponse& other);
+		HttpResponse& operator=(const HttpResponse& other);
 		~HttpResponse();
 
 		void		setStatusCode(HttpStatus status_code);

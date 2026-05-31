@@ -21,6 +21,7 @@ class	Server
 	public:
 		void		createClient(int listening_fd);
 		void		deleteClient(int client_fd);
+		void		checkCgiTimeouts(void);
 
 		const std::vector<Location>&	getLocations(void) const;
 	

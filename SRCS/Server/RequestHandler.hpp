@@ -7,6 +7,7 @@
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
 #include "../httpProtocol/HttpStatus.hpp"
+#include "../CGIHandler/CGIHandler.hpp"
 
 enum ResponseState
 {
@@ -47,6 +48,7 @@ class	RequestHandler
 		HttpStatus		resolveInitialStatus(void);
 		void			evaluateConnectionState(HttpStatus status);
 		HttpStatus		executeMethod(void);
+		HttpStatus		handleCgiMethod(void);
 		void			buildErrorOrRedirectResponse(HttpStatus status);
 		void			assembleFinalBuffer();
 		void			handleDeleteMethod(const std::string& physical_path);
@@ -85,7 +87,16 @@ class	RequestHandler
 		std::ifstream	_file_stream;
 		std::string		_redirect_target;
 		bool			_is_cgi;
+		CGIHandler*		_cgiHandler;
 
+	private:
+		void			teardownCgi(void);
+
+	public:
+		bool			hasPendingCgi(void) const;
+		void			finalizeCgiResponse(void);
+		void			abortCgiWithError(HttpStatus status);
+		CGIHandler*		getCgiHandler(void) const;
 };
 
 #endif

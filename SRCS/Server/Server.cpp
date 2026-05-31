@@ -67,6 +67,12 @@ void	Server::deleteClient(int client_fd)
 	_clients.erase(client_fd);
 }
 
+void	Server::checkCgiTimeouts(void)
+{
+	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+		it->second->checkCgiTimeout();
+}
+
 const std::vector<Location>&	Server::getLocations(void) const
 {
 	return (_locations);

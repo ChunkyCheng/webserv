@@ -54,6 +54,8 @@ void	WebServer::runServerLoop(void)
 	while (WebServer::_runServer)
 	{
 		_epoll.runEvents();
+		for (unsigned int i = 0; i < _servers.size(); ++i)
+			_servers[i]->checkCgiTimeouts();
 	}
 }
 

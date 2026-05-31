@@ -87,7 +87,7 @@ void	RequestHandler::processReqData(void)
 			case REQ_COMPLETE:
 				keep_processing = false;
 				break;
-			
+
 			case REQ_ERROR:
 				if (_httpRequest.hasError() || _handler_error_code == PAYLOAD_TOO_LARGE)
 				{
@@ -110,7 +110,22 @@ void	RequestHandler::buildResponseData(void)
 	}
 	if (status != NONE)
 	{
-		buildErrorOrRedirectResponse(status);
+		if (status >= 200 && status < 300)
+		{
+			if (status == CREATED)
+			{
+				_httpResponse.buildErrorPage(status, "<html>\r\n<head><title>201 Created</title></head>\r\n<body>\r\n<center><h1>201 Created</h1></center>\r\n</body>\r\n</html>\r\n");
+			}
+			else if (status == NO_CONTENT)
+			{
+				_httpResponse.setStatusCode(NO_CONTENT);
+				_httpResponse.overwriteHeader("Content-Length", "0");
+			}
+		}
+		else
+		{
+			buildErrorOrRedirectResponse(status);
+		}
 	}
 	assembleFinalBuffer();
 }

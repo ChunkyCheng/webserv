@@ -156,7 +156,7 @@ void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body
 		std::string error_str = sizeToString(error_code);
 		_body = "<html>\r\n";
 		_body += "<head><title>Error " + error_str + "</title></head>\r\n";
-		_body += "<center><h1>Error " + error_str + _reason_phrase + "</h1></center>\r\n";
+		_body += "<center><h1>Error " + error_str + " " + _reason_phrase + "</h1></center>\r\n";
 		_body += "</body>\r\n";
 		_body += "</html>\r\n";
 	}

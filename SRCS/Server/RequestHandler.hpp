@@ -52,6 +52,13 @@ class	RequestHandler
 		void			handleDeleteMethod(const std::string& physical_path);
 		bool			isCgiExtension(std::string& ext);
 		void			handlePostMethod(const std::string& physical_path);
+		std::string		getPathOnly(const std::string& uri);
+
+		/* Upload helpers */
+		std::string		buildSafeUploadPath(const std::string& physical_path, const std::string& suggested_filename = "") const;
+		bool			parseMultipartFile(const std::string& body, const std::map<std::string, std::string>& headers, std::string& out_filename, std::string& out_filecontent) const;
+		bool			ensureDirExists(const std::string& dir_path) const;
+		std::string		sanitizeFilename(const std::string& filename) const;
 
 
 	public:
@@ -61,6 +68,7 @@ class	RequestHandler
 		void			continueBuildResponse(void);
 		void			buildResponseData(void);
 		void			reset(void);
+		bool			getShouldCloseConnection(void) const;
 
 	protected:
 	private:

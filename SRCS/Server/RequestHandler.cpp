@@ -1,10 +1,16 @@
 #include "RequestHandler.hpp"
 #include <cstdlib>
+#include <cstdio>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
 #include <dirent.h>
+#include <algorithm>
+#include <ctime>
+#include <cerrno>
+#include <cstring>
+
 
 RequestHandler::RequestHandler(Server& server,
 std::string& req_buff, std::string& res_buff)
@@ -81,7 +87,7 @@ void	RequestHandler::processReqData(void)
 			case REQ_COMPLETE:
 				keep_processing = false;
 				break;
-			
+
 			case REQ_ERROR:
 				if (_httpRequest.hasError() || _handler_error_code == PAYLOAD_TOO_LARGE)
 				{
@@ -104,28 +110,25 @@ void	RequestHandler::buildResponseData(void)
 	}
 	if (status != NONE)
 	{
-		buildErrorOrRedirectResponse(status);
+		if (status >= 200 && status < 300)
+		{
+			if (status == CREATED)
+			{
+				_httpResponse.buildErrorPage(status, "<html>\r\n<head><title>201 Created</title></head>\r\n<body>\r\n<center><h1>201 Created</h1></center>\r\n</body>\r\n</html>\r\n");
+			}
+			else if (status == NO_CONTENT)
+			{
+				_httpResponse.setStatusCode(NO_CONTENT);
+				_httpResponse.overwriteHeader("Content-Length", "0");
+			}
+		}
+		else
+		{
+			buildErrorOrRedirectResponse(status);
+		}
 	}
 	assembleFinalBuffer();
 }
-
-// void	RequestHandler::buildResponseData(void)
-// {
-// 	HttpStatus status = resolveInitialStatus();
-// 	evaluateConnectionState(status);
-// 	if (_is_cgi)
-// 	{
-// 		executecgi();
-// 		_req_state = REQ_WAITING_CGI;
-// 		return ;
-// 	}
-// 	else
-// 	{
-// 		executeMethod();
-// 		assembleFinalBuffer();
-// 		_req_state = REQ_READY_TO_SEND;
-// 	}
-// }
 
 void	RequestHandler::continueBuildResponse(void)
 {
@@ -160,13 +163,8 @@ void	RequestHandler::continueBuildResponse(void)
 		else
 		{
 			_res_state = RES_FINISHED;
-			_should_close_connection = true;
 		}
 	}
-	// else if (_res_state == RES_CGI_BODY)
-	// {
-		
-	// }
 }
 
 // ==============================================================================
@@ -175,57 +173,74 @@ void	RequestHandler::continueBuildResponse(void)
 
 HttpStatus	RequestHandler::executeMethod()
 {
-		std::string physical_path = getNormalPagePath();
-		// if (_is_cgi)
-		// {
-		// 	int read_pipe_fd = CGI.executeCGI(_httpRequest, physical_path, _httpResponse);
-		// 	if (read_pipe_fd < 0)
-		// 	{
-		// 		return (INTERNAL_SERVER_ERROR);
-		// 	}
-		// 	_cgi_read_pipe_fd = read_pipe_fd;
-		// 	return (WAITING FOR CGI);
-		// }
-		// else
-		// {
-			std::string method = _httpRequest.getMethod();
-			if (method == "GET")
-			{
-				handleGetMethod(physical_path);
-			}
-			else if (method == "POST")
-			{
-				handlePostMethod(physical_path);
-			}
-			else if (method == "DELETE")
-			{
-				handleDeleteMethod(physical_path);
-			}
-			else
-			{
-				return (METHOD_NOT_ALLOWED);
-			}
-			return (_handler_error_code != NONE ? _handler_error_code : NONE);
-		// }
+	std::string physical_path = getNormalPagePath();
+	std::string method = _httpRequest.getMethod();
+	if (method == "GET")
+	{
+		handleGetMethod(physical_path);
+	}
+	else if (method == "POST")
+	{
+		handlePostMethod(physical_path);
+	}
+	else if (method == "DELETE")
+	{
+		handleDeleteMethod(physical_path);
+	}
+	else
+	{
+		return (METHOD_NOT_ALLOWED);
+	}
+	return (_handler_error_code != NONE ? _handler_error_code : NONE);
+
 }
 
 void	RequestHandler::handlePostMethod(const std::string& physical_path)
 {
-	bool upload_enabled = _location->isUploadEnabled();
+	bool upload_enabled = _location->isUploadAllowed();
 	if (!upload_enabled)
 	{
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
-	std::string upload_path = _location->getUploadFilePath(physical_path);
+
+	std::string filename;
+	std::string filecontent;
+	std::map<std::string, std::string> headers = _httpRequest.getHeaders();
+
+	bool parsed = parseMultipartFile(_httpRequest.getBody(), headers, filename, filecontent);
+
+	std::string upload_path;
+	if (parsed)
+	{
+		upload_path = buildSafeUploadPath(physical_path, filename);
+	}
+	else
+	{
+		upload_path = buildSafeUploadPath(physical_path);
+		filecontent = _httpRequest.getBody();
+	}
+
+	// Ensure upload directory exists
+	size_t slash = upload_path.find_last_of('/');
+	if (slash != std::string::npos)
+	{
+		std::string dir = upload_path.substr(0, slash);
+		if (!ensureDirExists(dir))
+		{
+			_handler_error_code = FORBIDDEN;
+			return;
+		}
+	}
+
 	std::ofstream file(upload_path.c_str(), std::ios::out | std::ios::binary);
+	std::cout << upload_path << std::endl;
 	if (!file.is_open())
 	{
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
-	const std::string& body = _httpRequest.getBody();
-	file.write(body.c_str(), body.size());
+	file.write(filecontent.c_str(), filecontent.size());
 	if (file.bad())
 	{
 		_handler_error_code = INTERNAL_SERVER_ERROR;
@@ -237,12 +252,173 @@ void	RequestHandler::handlePostMethod(const std::string& physical_path)
 	file.close();
 }
 
+std::string RequestHandler::buildSafeUploadPath(const std::string& physical_path, const std::string& suggested_filename) const
+{
+	std::string base_dir = _location->getUploadStore();
+	if (base_dir.empty())
+		base_dir = ".";
+
+	std::string name;
+	if (!suggested_filename.empty())
+		name = sanitizeFilename(suggested_filename);
+	else
+	{
+		size_t pos = physical_path.find_last_of('/');
+		if (pos == std::string::npos)
+			name = sanitizeFilename(physical_path);
+		else
+			name = sanitizeFilename(physical_path.substr(pos + 1));
+	}
+
+	if (name.empty())
+	{
+		// generate fallback name
+		std::stringstream ss;
+		ss << "upload_" << std::time(NULL) << "_" << getpid();
+		name = ss.str();
+	}
+
+	// ensure base_dir ends without '/'
+	if (!base_dir.empty() && base_dir[base_dir.length() - 1] == '/')
+		base_dir.erase(base_dir.length() - 1);
+	return (base_dir + "/" + name);
+}
+
+bool RequestHandler::ensureDirExists(const std::string& dir_path) const
+{
+	if (dir_path.empty())
+		return (false);
+	struct stat st;
+	if (stat(dir_path.c_str(), &st) == 0)
+	{
+		if (S_ISDIR(st.st_mode))
+			return (true);
+	}
+	return (false);
+}
+
+std::string RequestHandler::sanitizeFilename(const std::string& filename) const
+{
+	std::string out;
+	for (size_t i = 0; i < filename.size(); ++i)
+	{
+		char c = filename[i];
+		if (c == '/' || c == '\\')
+			continue;
+		if (c == '.' || c == '_' || c == '-' || std::isalnum(static_cast<unsigned char>(c)))
+			out.push_back(c);
+		else
+			out.push_back('_');
+		if (out.size() >= 200)
+			break;
+	}
+	// remove leading dots to avoid hidden files or relative paths
+	while (!out.empty() && out[0] == '.')
+		out.erase(out.begin());
+	return out;
+}
+
+bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<std::string, std::string>& headers, std::string& out_filename, std::string& out_filecontent) const
+{
+	std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
+	if (it == headers.end())
+		return false;
+	std::string ctype = it->second;
+	std::string boundary_key = "boundary=";
+	size_t bpos = ctype.find(boundary_key);
+	if (bpos == std::string::npos)
+		return false;
+	std::string boundary = ctype.substr(bpos + boundary_key.length());
+	// strip possible quotes
+	if (!boundary.empty() && boundary[0] == '"' && boundary[boundary.length() - 1] == '"')
+	{
+		boundary = boundary.substr(1, boundary.length() - 2);
+	}
+	std::string delim = "--" + boundary;
+
+	size_t part_start = body.find(delim);
+	if (part_start == std::string::npos)
+		return false;
+	// move to end of boundary line
+	size_t line_end = body.find("\r\n", part_start);
+	if (line_end == std::string::npos)
+		return false;
+	size_t hdr_start = line_end + 2;
+	size_t hdr_end = body.find("\r\n\r\n", hdr_start);
+	if (hdr_end == std::string::npos)
+		return false;
+	std::string part_headers = body.substr(hdr_start, hdr_end - hdr_start);
+	std::string filename;
+	// parse part headers
+	size_t pos = 0;
+	while (pos < part_headers.size())
+	{
+		size_t eol = part_headers.find("\r\n", pos);
+		std::string line;
+		if (eol == std::string::npos)
+		{
+			line = part_headers.substr(pos);
+			pos = part_headers.size();
+		}
+		else
+		{
+			line = part_headers.substr(pos, eol - pos);
+			pos = eol + 2;
+		}
+		// look for Content-Disposition
+		std::string low = line;
+		std::transform(low.begin(), low.end(), low.begin(), ::tolower);
+		if (low.find("content-disposition:") == 0)
+		{
+			size_t fname_pos = line.find("filename=");
+			if (fname_pos != std::string::npos)
+			{
+				size_t q = line.find('"', fname_pos);
+				if (q != std::string::npos)
+				{
+					size_t q2 = line.find('"', q + 1);
+					if (q2 != std::string::npos)
+						filename = line.substr(q + 1, q2 - q - 1);
+				}
+				else
+				{
+					// unquoted value until semicolon or end
+					size_t endpos = line.find(';', fname_pos);
+					if (endpos == std::string::npos)
+						endpos = line.length();
+					filename = line.substr(fname_pos + 9, endpos - (fname_pos + 9));
+				}
+			}
+		}
+	}
+	if (filename.empty())
+		return false;
+
+	size_t content_start = hdr_end + 4;
+	std::string boundary_search = "\r\n" + delim;
+	size_t content_end = body.find(boundary_search, content_start);
+	if (content_end == std::string::npos)
+	{
+		// try without preceding CRLF
+		content_end = body.find(delim, content_start);
+		if (content_end == std::string::npos)
+			return false;
+	}
+	out_filecontent = body.substr(content_start, content_end - content_start);
+	// strip trailing CRLF if present
+	if (out_filecontent.size() >= 2 && out_filecontent.substr(out_filecontent.size() - 2) == "\r\n")
+		out_filecontent.erase(out_filecontent.size() - 2);
+
+	out_filename = filename;
+	return true;
+}
+
 void RequestHandler::assembleFinalBuffer()
 {
 	if (_should_close_connection)
-		_httpResponse.addHeader("Connection", "close");
+		_httpResponse.overwriteHeader("Connection", "close");
 	else
-		_httpResponse.addHeader("Connection", "keep-alive");
+		_httpResponse.overwriteHeader("Connection", "keep-alive");
 	_response_buff = _httpResponse.getFormattedHeaders();
 	const std::string& memory_body = _httpResponse.getBody();
 	if (!memory_body.empty())
@@ -295,7 +471,7 @@ void	RequestHandler::evaluateConnectionState(HttpStatus status)
 
 HttpStatus RequestHandler::validateRequestLocation()
 {
-	std::string uri = _httpRequest.getPath();
+	std::string uri = getPathOnly(_httpRequest.getPath());
 	std::cout << "PATH: " << uri << "\n";
 	const std::vector<Location>& bookshelf = _server.getLocations();
 	_location = matchLocation(uri, bookshelf);
@@ -408,7 +584,7 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 std::string RequestHandler::getNormalPagePath(void)
 {
 	std::string root = _location->getRoot();
-	std::string uri = _httpRequest.getPath();
+	std::string uri = getPathOnly(_httpRequest.getPath());
 	if (!root.empty() && root[root.length() - 1] == '/' && !uri.empty() && uri[0] == '/')
 	{
 		root.erase(root.length() - 1);
@@ -418,25 +594,28 @@ std::string RequestHandler::getNormalPagePath(void)
 	return (full_path);
 }
 
-
-// void RequestHandler::handlePostMethod()
-// {
-	
-// }
-
 void RequestHandler::handleDeleteMethod(const std::string& physical_path)
 {
-	if (access(physical_path.c_str(), F_OK) != 0)
+	struct stat file_stat;
+	if (stat(physical_path.c_str(), &file_stat) != 0)
 	{
 		_handler_error_code = NOT_FOUND;
 		return;
 	}
+
+	if (S_ISDIR(file_stat.st_mode))
+	{
+		_handler_error_code = FORBIDDEN;
+		return;
+	}
+
 	if (access(physical_path.c_str(), W_OK) != 0)
 	{
 		_handler_error_code = FORBIDDEN;
 		return;
 	}
-	if (unlink(physical_path.c_str()) == 0)
+
+	if (std::remove(physical_path.c_str()) == 0)
 	{
 		_handler_error_code = NO_CONTENT;
 	}
@@ -462,10 +641,12 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 	if (S_ISDIR(file_stat.st_mode))
 	{
 		std::string uri = _httpRequest.getPath();
-		if (!uri.empty() && uri[uri.length() - 1] != '/')
+		std::string path = getPathOnly(uri);
+		if (!path.empty() && path[path.length() - 1] != '/')
 		{
 			_handler_error_code = MOVED_PERMANENTLY;
-			_redirect_target = uri + "/";
+			std::string query_and_frag = uri.substr(path.length());
+			_redirect_target = path + "/" + query_and_frag;
 			return;
 		}
 		bool index_found = false;
@@ -473,7 +654,17 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		const std::vector<std::string>& index = _location->getIndex();
 		for (size_t i = 0; i < index.size(); ++i)
 		{
-			std::string test_path = physical_path + index[i];
+			std::string test_path = physical_path;
+			if (!test_path.empty() && test_path[test_path.length() - 1] != '/')
+			{
+				test_path += "/";
+			}
+			std::string index_file = index[i];
+			if (!index_file.empty() && index_file[0] == '/')
+			{
+				index_file.erase(0, 1);
+			}
+			test_path += index_file;
 			if (access(test_path.c_str(), R_OK) == 0)
 			{
 				index_found = true;
@@ -499,7 +690,7 @@ void RequestHandler::handleGetMethod(const std::string& physical_path)
 		{
 			if (_location->isAutoindex())
 			{
-				std::string autoindex_body = generateAutoindex(physical_path, uri);
+				std::string autoindex_body = generateAutoindex(physical_path, path);
 				if (autoindex_body.empty())
 				{
 					_handler_error_code = FORBIDDEN;
@@ -593,13 +784,18 @@ std::string	RequestHandler::generateAutoindex(const std::string& physical_path, 
 	return (html);
 }
 
-const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& location)
+const Location*	RequestHandler::matchLocation(const std::string& request_uri, const std::vector<Location>& locations)
 {
-	for (size_t i = 0; i < location.size(); ++i)
+	for (size_t i = 0; i < locations.size(); ++i)
 	{
-		if (request_uri.find(location[i].getPrefix()) == 0)
+		const std::string& prefix = locations[i].getPrefix();
+		if (request_uri.compare(0, prefix.size(), prefix) != 0)
+			continue;
+		if (request_uri.size() == prefix.size()
+			|| prefix[prefix.size() - 1] == '/'
+			|| request_uri[prefix.size()] == '/')
 		{
-			return &location[i];
+			return (&locations[i]);
 		}
 	}
 	return (NULL);
@@ -620,4 +816,50 @@ void	RequestHandler::reset(void)
 	}
 	_file_stream.clear();
 	_redirect_target.clear();
+}
+
+bool	RequestHandler::getShouldCloseConnection(void) const
+{
+	return (_should_close_connection);
+}
+
+static std::string normalizePath(const std::string& path)
+{
+	std::vector<std::string> segments;
+	std::stringstream ss(path);
+	std::string segment;
+	while (std::getline(ss, segment, '/'))
+	{
+		if (segment == "" || segment == ".")
+			continue;
+		if (segment == "..")
+		{
+			if (!segments.empty())
+				segments.pop_back();
+		}
+		else
+		{
+			segments.push_back(segment);
+		}
+	}
+	
+	std::string result = "";
+	for (size_t i = 0; i < segments.size(); ++i)
+	{
+		result += "/" + segments[i];
+	}
+	if (result.empty())
+		result = "/";
+		
+	// If this is a directory, second condition is true, same as the last, so will append /images/ for example
+	if (path.length() > 0 && path[path.length() - 1] == '/' && result != "/")
+		result += "/";
+	return (result);
+}
+
+std::string RequestHandler::getPathOnly(const std::string& uri)
+{
+	size_t pos = uri.find_first_of("?#");
+	std::string path = (pos == std::string::npos) ? uri : uri.substr(0, pos);
+	return (normalizePath(path));
 }

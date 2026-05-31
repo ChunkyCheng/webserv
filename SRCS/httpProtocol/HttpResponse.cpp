@@ -36,6 +36,9 @@ void	HttpResponse::setStatusCode(HttpStatus status_code)
 		case OK:
 			_reason_phrase = "OK";
 			break;
+		case CREATED:
+			_reason_phrase = "Created";
+			break;
 		case NO_CONTENT:
 			_reason_phrase = "No Content";
 			break;
@@ -132,15 +135,15 @@ const std::string& HttpResponse::getReasonPhrase() const
 void	HttpResponse::buildNormalHeaders(std::streamsize file_size, const std::string& physical_path)
 {
 	setStatusCode(OK);
-	addHeader("Content-Type", getMimeType(physical_path));
-	addHeader("Content-Length", sizeToString(file_size));
+	overwriteHeader("Content-Type", getMimeType(physical_path));
+	overwriteHeader("Content-Length", sizeToString(file_size));
 }
 
 void	HttpResponse::buildRedirectHeaders(const std::string& target, HttpStatus code)
 {
 		setStatusCode(code);
-		addHeader("Location", target);
-		addHeader("Content-Length", "0");
+		overwriteHeader("Location", target);
+		overwriteHeader("Content-Length", "0");
 }
 
 void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body_content)
@@ -153,12 +156,12 @@ void	HttpResponse::buildErrorPage(HttpStatus error_code, const std::string& body
 		std::string error_str = sizeToString(error_code);
 		_body = "<html>\r\n";
 		_body += "<head><title>Error " + error_str + "</title></head>\r\n";
-		_body += "<center><h1>Error " + error_str + _reason_phrase + "</h1></center>\r\n";
+		_body += "<center><h1>Error " + error_str + " " + _reason_phrase + "</h1></center>\r\n";
 		_body += "</body>\r\n";
 		_body += "</html>\r\n";
 	}
-	addHeader("Content-Type", "text/html");
-	addHeader("Content-Length", sizeToString(_body.length()));
+	overwriteHeader("Content-Type", "text/html");
+	overwriteHeader("Content-Length", sizeToString(_body.length()));
 }
 
 void	HttpResponse::setBody(const std::string &body)
@@ -176,8 +179,8 @@ void	HttpResponse::buildAutoIndexResponse(const std::string& autoindex_body)
 	setStatusCode(OK);
 	_body = autoindex_body;
 	std::string content_length = sizeToString(_body.length());
-	addHeader("Content-Type", "text/html");
-	addHeader("Content-Length", content_length);
+	overwriteHeader("Content-Type", "text/html");
+	overwriteHeader("Content-Length", content_length);
 }
 
 std::string HttpResponse::getFormattedHeaders() const
@@ -207,22 +210,57 @@ std::string HttpResponse::getMimeType(const std::string& path)
 {
 	size_t dotPos = path.find_last_of('.');
 	if (dotPos == std::string::npos)
-		return "text/plain"; 
+		return "application/octet-stream"; 
 
 	std::string ext = path.substr(dotPos);
 
+	for (size_t i = 0; i < ext.length(); ++i)
+	{
+		ext[i] = std::tolower(static_cast<unsigned char>(ext[i]));
+	}
+
+	// 1. Web core
 	if (ext == ".html" || ext == ".htm") return "text/html";
 	if (ext == ".css") return "text/css";
 	if (ext == ".js") return "text/javascript";
-	
+	if (ext == ".json") return "application/json";
+	if (ext == ".xml") return "application/xml";
+
+	// 2. Documents
+	if (ext == ".txt") return "text/plain";
+	if (ext == ".pdf") return "application/pdf";
+	if (ext == ".csv") return "text/csv";
+	if (ext == ".md") return "text/markdown";
+
+	// 3. Images
 	if (ext == ".png") return "image/png";
 	if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
 	if (ext == ".gif") return "image/gif";
 	if (ext == ".ico") return "image/x-icon";
-	
-	if (ext == ".mp4") return "video/mp4";
-	if (ext == ".mp3") return "audio/mpeg";
+	if (ext == ".svg") return "image/svg+xml";
+	if (ext == ".webp") return "image/webp";
+	if (ext == ".bmp") return "image/bmp";
 
-	return "text/plain";
+	// 4. Audio & Video
+	if (ext == ".mp3") return "audio/mpeg";
+	if (ext == ".wav") return "audio/wav";
+	if (ext == ".ogg") return "audio/ogg";
+	if (ext == ".mp4") return "video/mp4";
+	if (ext == ".webm") return "video/webm";
+
+	// 5. Fonts
+	if (ext == ".woff") return "font/woff";
+	if (ext == ".woff2") return "font/woff2";
+	if (ext == ".ttf") return "font/ttf";
+	if (ext == ".otf") return "font/otf";
+
+	// 6. Archives & Compressed
+	if (ext == ".zip") return "application/zip";
+	if (ext == ".tar") return "application/x-tar";
+	if (ext == ".gz") return "application/gzip";
+	if (ext == ".rar") return "application/vnd.rar";
+	if (ext == ".7z") return "application/x-7z-compressed";
+
+	return "application/octet-stream";
 }
 

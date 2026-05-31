@@ -15,6 +15,9 @@
 
 HttpRequest::HttpRequest()
 	: _error_code(NONE),
+	_chunk_state(CHUNK_SIZE),
+	_chunk_size(0),
+	_chunk_bytes_read(0),
 	_content_length(0),
 	_is_chunked(false),
 	_keep_alive(true)
@@ -224,9 +227,17 @@ bool HttpRequest::parseHeaderLine(const std::string& line)
 		}
 		key[i] = std::tolower(key[i]);
 	}
+	size_t start = value.find_first_not_of(" \t");
+	if (start == std::string::npos)
+		value = "";
+	else
+	{
+		size_t end = value.find_last_not_of(" \t");
+		value = value.substr(start, end - start + 1);
+	}
 	if (_headers.find(key) != _headers.end())
 	{
-		if (key == "host")
+		if (key == "host" || key == "content-length" || key == "transfer-encoding")
 		{
 			_error_code = BAD_REQUEST;
 			return (false);
@@ -276,7 +287,12 @@ bool	HttpRequest::setupBodyType()
 	}
 	if (has_te)
 	{
-		if (_headers["transfer-encoding"].find("chunked") != std::string::npos)
+		std::string te_val = _headers["transfer-encoding"];
+		for (size_t i = 0; i < te_val.length(); ++i)
+		{
+			te_val[i] = std::tolower(te_val[i]);
+		}
+		if (te_val.find("chunked") != std::string::npos)
 		{
 			_is_chunked = true;
 			return (true);
@@ -288,7 +304,9 @@ bool	HttpRequest::setupBodyType()
 		return (parseContentLength());
 	return (true);
 }
-
+// Loop runs as long as three conditions are true: incoming buffer has data, haven't finished parsing (CHUNK_COMPLETE), and no errors have occured
+// Since chunk encoding format is fixed, we always start with checking size first, thus, CHUNK SIZE is triggered
+// 
 bool	HttpRequest::parseChunkedBody(std::string& req_buff, size_t max_body_size)
 {
 	while (!req_buff.empty() && _chunk_state != CHUNK_COMPLETE && _chunk_state != CHUNK_ERROR)
@@ -307,6 +325,21 @@ bool	HttpRequest::parseChunkedBody(std::string& req_buff, size_t max_body_size)
 				if (semi != std::string::npos)
 				{
 					chunked_str = chunked_str.substr(0, semi);
+				}
+				if (chunked_str.empty() || chunked_str.length() > 16)
+				{
+					_chunk_state = CHUNK_ERROR;
+					_error_code = BAD_REQUEST;
+					return (false);
+				}
+				for (size_t i = 0; i < chunked_str.length(); ++i)
+				{
+					if (!std::isxdigit(static_cast<unsigned char>(chunked_str[i])))
+					{
+						_chunk_state = CHUNK_ERROR;
+						_error_code = BAD_REQUEST;
+						return (false);
+					}
 				}
 				std::stringstream ss;
 				ss << std::hex << chunked_str;
@@ -377,7 +410,7 @@ bool	HttpRequest::parseChunkedBody(std::string& req_buff, size_t max_body_size)
 			
 			case CHUNK_TRAILER:
 			{
-				size_t pos = req_buff.find("\r\n\r\n");
+				size_t pos = req_buff.find("\r\n");
 				if (pos == std::string::npos)
 				{
 					return (false);

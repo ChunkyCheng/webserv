@@ -20,6 +20,7 @@ class	ConfigExcept : public std::exception
 			HOST_NOT_FOUND,
 			INVALID_METHOD,
 			INVALID_BOOL,
+			INVALID_EXTEN,
 			DUPLICATE,
 			CONFLICT
 		};

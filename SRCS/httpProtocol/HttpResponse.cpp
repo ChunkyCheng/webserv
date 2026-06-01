@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*   By: akok <akok@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/07 14:44:52 by yelu              #+#    #+#             */
-/*   Updated: 2026/04/29 17:40:17 by yelu             ###   ########.fr       */
+/*   Updated: 2026/05/31 16:46:45 by akok             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,27 @@ HttpResponse::HttpResponse()
 	: _version("HTTP/1.1"),
 	_status_code(NONE)
 {}
+
+HttpResponse::HttpResponse(const HttpResponse& other)
+	: _version(other._version),
+	_status_code(other._status_code),
+	_reason_phrase(other._reason_phrase),
+	_headers(other._headers),
+	_body(other._body)
+{}
+
+HttpResponse& HttpResponse::operator=(const HttpResponse& other)
+{
+	if (this != &other)
+	{
+		_version = other._version;
+		_status_code = other._status_code;
+		_reason_phrase = other._reason_phrase;
+		_headers = other._headers;
+		_body = other._body;
+	}
+	return (*this);
+}
 
 void	HttpResponse::reset()
 {

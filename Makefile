@@ -21,12 +21,15 @@ SERVER_DIR		=	Server
 SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 					Server.cpp			ServerSocket.cpp	\
 					Client.cpp			ClientSocket.cpp	\
-					Location.cpp							\
+					Location.cpp		CGIPipe.cpp			\
 					RequestHandler.cpp
+
+CGI_DIR			=	CGIHandler
+CGI_FILES		=	CGIHandler.cpp
 
 UTILS_DIR		=	utils
 
-MODULES		=	PARSE	DIRECTIVE	SERVER	HTTP	UTILS
+MODULES		=	PARSE	DIRECTIVE	SERVER	HTTP	UTILS	CGI
 
 $(foreach M,$(MODULES), $(eval $(M)_SRCS = $(addprefix $($(M)_DIR)/, $($(M)_FILES))))
 

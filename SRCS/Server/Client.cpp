@@ -1,15 +1,22 @@
 #include "Client.hpp"
+#include "CGIPipe.hpp"
 #include "Server.hpp"
 #include "Epoll.hpp"
+#include <ctime>
 
 Client::Client(int socket_fd, Server& server, Epoll& epoll)
 	:_socket(*this, socket_fd), _server(server), _epoll(epoll),
-	 _requestHandler(server, _request_buff, _response_buff)
+	 _requestHandler(server, _request_buff, _response_buff), _cgiPipe(NULL)
 {
 }
 
 Client::~Client(void)
 {
+	if (_cgiPipe)
+	{
+		_epoll.removeSocketFromPoll(*_cgiPipe);
+		delete _cgiPipe;
+	}
 }
 
 ClientSocket& Client::getSocket(void)
@@ -37,8 +44,47 @@ void	Client::recvMessage(void)
 		if (_requestHandler.checkRequestComplete())
 		{
 			_requestHandler.buildResponseData();
-			_epoll.modAddSendEvent(_socket);
+			if (_requestHandler.hasPendingCgi())
+			{
+				_cgiPipe = new CGIPipe(*this, *_requestHandler.getCgiHandler());
+				_epoll.addSocketToPoll(*_cgiPipe);
+			}
+			else
+			{
+				_epoll.modAddSendEvent(_socket);
+			}
 		}
+	}
+}
+
+void	Client::closeCgiPipe(void)
+{
+	_epoll.removeSocketFromPoll(*_cgiPipe);
+	delete _cgiPipe;
+	_cgiPipe = NULL;
+	_epoll.modAddSendEvent(_socket);
+}
+
+void	Client::onCgiComplete(CGIPipe& pipe)
+{
+	(void)pipe;
+	_requestHandler.finalizeCgiResponse();
+	closeCgiPipe();
+}
+
+void	Client::checkCgiTimeout(void)
+{
+	const int	CGI_TIMEOUT = 5;
+
+	if (!_cgiPipe)
+		return;
+	CGIHandler*	handler = _requestHandler.getCgiHandler();
+	if (!handler)
+		return;
+	if (time(NULL) - handler->getStartTime() > CGI_TIMEOUT)
+	{
+		_requestHandler.abortCgiWithError(INTERNAL_SERVER_ERROR);
+		closeCgiPipe();
 	}
 }
 

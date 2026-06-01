@@ -6,6 +6,7 @@
 # include "RequestHandler.hpp"
 
 class	Epoll;
+class	CGIPipe;
 
 class	Client
 {
@@ -17,10 +18,14 @@ class	Client
 		Client(const Client& other);
 		Client&	operator=(const Client& other);
 
+		void	closeCgiPipe(void);
+
 	public:
 		ClientSocket&	getSocket(void);
 		void			recvMessage(void);
 		void			sendMessage(void);
+		void			onCgiComplete(CGIPipe& pipe);
+		void			checkCgiTimeout(void);
 
 	private:
 		ClientSocket	_socket;
@@ -29,6 +34,7 @@ class	Client
 		RequestHandler	_requestHandler;
 		std::string		_request_buff;
 		std::string		_response_buff;
+		CGIPipe*		_cgiPipe;
 };
 
 #endif

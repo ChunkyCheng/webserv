@@ -23,12 +23,14 @@ std::string& req_buff, std::string& res_buff)
 	_handler_error_code(NONE),
 	_location(NULL),
 	_should_close_connection(false),
-	_is_cgi(false)
+	_is_cgi(false),
+	_cgiHandler(NULL)
 {
 }
 
 RequestHandler::~RequestHandler(void)
 {
+	delete _cgiHandler;
 }
 
 bool	RequestHandler::checkRequestComplete(void) const
@@ -127,7 +129,8 @@ void	RequestHandler::buildResponseData(void)
 			buildErrorOrRedirectResponse(status);
 		}
 	}
-	assembleFinalBuffer();
+	if (_res_state != RES_CGI_BODY)
+		assembleFinalBuffer();
 }
 
 void	RequestHandler::continueBuildResponse(void)
@@ -173,8 +176,10 @@ void	RequestHandler::continueBuildResponse(void)
 
 HttpStatus	RequestHandler::executeMethod()
 {
-	std::string physical_path = getNormalPagePath();
 	std::string method = _httpRequest.getMethod();
+	if (_is_cgi)
+		return (handleCgiMethod());
+	std::string physical_path = getNormalPagePath();
 	if (method == "GET")
 	{
 		handleGetMethod(physical_path);
@@ -495,18 +500,10 @@ HttpStatus RequestHandler::validateRequestLocation()
 	return (OK);
 }
 
-bool	RequestHandler::isCgiExtension(std::string &ext)
+bool	RequestHandler::isCgiExtension(std::string& ext)
 {
-	const char* valid_ext[] = {".py", ".php", ".cgi"};
-	size_t num_ext = sizeof(valid_ext) / sizeof(valid_ext[0]);
-	for (size_t i = 0; i < num_ext; ++i)
-	{
-		if (ext == valid_ext[i])
-		{
-			return (true);
-		}
-	}
-	return (false);
+	const std::map<std::string, std::string>& cgiMap = _location->getCgiMap();
+	return (cgiMap.find(ext) != cgiMap.end());
 }
 
 bool	RequestHandler::readFileContent(const std::string& file_path, std::string& body_content)
@@ -807,6 +804,7 @@ void	RequestHandler::reset(void)
 	_res_state = RES_HEADERS;
 	_handler_error_code = NONE;
 	_should_close_connection = false;
+	_is_cgi = false;
 	_location = NULL;
 	_httpRequest.reset();
 	_httpResponse.reset();
@@ -816,11 +814,74 @@ void	RequestHandler::reset(void)
 	}
 	_file_stream.clear();
 	_redirect_target.clear();
+	delete _cgiHandler;
+	_cgiHandler = NULL;
 }
 
 bool	RequestHandler::getShouldCloseConnection(void) const
 {
 	return (_should_close_connection);
+}
+
+HttpStatus	RequestHandler::handleCgiMethod()
+{
+	const std::map<std::string, std::string>& cgi_map = _location->getCgiMap();
+	std::string uri = getPathOnly(_httpRequest.getPath());
+	size_t dot_pos = uri.find_last_of('.');
+	if (dot_pos == std::string::npos)
+		return (INTERNAL_SERVER_ERROR);
+
+	std::string ext = uri.substr(dot_pos);
+	std::map<std::string, std::string>::const_iterator interpreter = cgi_map.find(ext);
+	if (interpreter == cgi_map.end())
+		return (INTERNAL_SERVER_ERROR);
+
+	std::string physical_path = getNormalPagePath();
+	struct stat file_stat;
+	if (stat(physical_path.c_str(), &file_stat) != 0)
+		return (NOT_FOUND);
+
+	delete _cgiHandler;
+	_cgiHandler = new CGIHandler(interpreter->second, physical_path);
+	_cgiHandler->executeAsync(_httpRequest);
+	_res_state = RES_CGI_BODY;
+	return (NONE);
+}
+
+bool	RequestHandler::hasPendingCgi(void) const
+{
+	return (_res_state == RES_CGI_BODY);
+}
+
+void	RequestHandler::teardownCgi(void)
+{
+	delete _cgiHandler;
+	_cgiHandler = NULL;
+	_res_state = RES_HEADERS;
+}
+
+void	RequestHandler::finalizeCgiResponse(void)
+{
+	if (!_cgiHandler)
+		return;
+	_httpResponse = _cgiHandler->parseResponse(_cgiHandler->getOutput());
+	std::ostringstream oss;
+	oss << _httpResponse.getBody().size();
+	_httpResponse.overwriteHeader("Content-Length", oss.str());
+	teardownCgi();
+	assembleFinalBuffer();
+}
+
+void	RequestHandler::abortCgiWithError(HttpStatus status)
+{
+	teardownCgi();
+	buildErrorOrRedirectResponse(status);
+	assembleFinalBuffer();
+}
+
+CGIHandler*	RequestHandler::getCgiHandler(void) const
+{
+	return (_cgiHandler);
 }
 
 static std::string normalizePath(const std::string& path)

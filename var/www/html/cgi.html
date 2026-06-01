@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CGI Sandbox & Live Inspector - Webserv</title>
+    <!-- Modern Outfit Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #060609;
+            --card-bg: rgba(13, 9, 16, 0.82);
+            --accent-primary: #e62232; /* Hornet's Crimson */
+            --accent-secondary: #0ea5e9; /* Cyber Cyan */
+            --accent-green: #10b981; /* Success Green */
+            --text-main: #f8fafc; /* Near White */
+            --text-muted: #94a3b8; /* Cool Grey */
+            --border: rgba(230, 34, 50, 0.15); /* Crimson Borders */
+            --terminal-bg: #09070f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(6, 6, 9, 0.92), rgba(6, 6, 9, 0.92)),
+                url('./images/cgi_showcase.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 45px;
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 40%, var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: rgba(230, 34, 50, 0.04);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: rgba(230, 34, 50, 0.12);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(230, 34, 50, 0.15);
+        }
+
+        /* Layout Grid */
+        .sandbox-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .sandbox-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 15px;
+            backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-align: left;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(230, 34, 50, 0.1);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: rgba(230, 34, 50, 0.08);
+            border-color: var(--border);
+            box-shadow: inset 0 0 8px rgba(230, 34, 50, 0.1);
+        }
+
+        .tab-btn.active svg {
+            stroke: var(--accent-primary);
+            filter: drop-shadow(0 0 2px rgba(230, 34, 50, 0.5));
+        }
+
+        .tab-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-muted);
+            fill: none;
+            stroke-width: 1.5;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        /* Main Showcase Area */
+        .showcase-area {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            position: relative;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .panel-header {
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
+        }
+
+        .panel-header h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-header h2 svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--accent-primary);
+        }
+
+        .panel-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* Form styling */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        input[type="text"], input[type="password"], input[type="number"], select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 10px rgba(230, 34, 50, 0.15);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .action-btn.primary {
+            background: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            color: #fff;
+        }
+
+        .action-btn.primary:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(230, 34, 50, 0.4);
+        }
+
+        .action-btn.secondary {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* File input upload zone in CGI */
+        .cgi-upload-zone {
+            border: 2px dashed rgba(230, 34, 50, 0.25);
+            border-radius: 16px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(230, 34, 50, 0.01);
+            margin-bottom: 20px;
+        }
+
+        .cgi-upload-zone:hover {
+            border-color: var(--accent-primary);
+            background: rgba(230, 34, 50, 0.04);
+        }
+
+        .cgi-upload-zone p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .cgi-upload-zone span {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        /* Live Inspector Terminal */
+        .inspector-panel {
+            background: var(--terminal-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            margin-top: 30px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .inspector-header {
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .inspector-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .inspector-title .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            display: inline-block;
+        }
+
+        .inspector-title .dot.green {
+            background: var(--accent-green);
+        }
+
+        .meta-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .meta-stats span strong {
+            color: var(--accent-secondary);
+        }
+
+        .inspector-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        @media (max-width: 800px) {
+            .inspector-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .inspector-column {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .inspector-column.request {
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        @media (max-width: 800px) {
+            .inspector-column.request {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            }
+        }
+
+        .inspector-column h3 {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #d1d5db;
+            max-height: 250px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .code-block .method { color: var(--accent-primary); font-weight: bold; }
+        .code-block .url { color: var(--accent-secondary); }
+        .code-block .header-name { color: #f43f5e; }
+        .code-block .header-val { color: #cbd5e1; }
+        .code-block .status-code { color: var(--accent-green); font-weight: bold; }
+
+        /* Output HTML previewer */
+        .preview-container {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .preview-container h3 {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .live-preview {
+            background: #fff;
+            color: #000;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 80px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: sans-serif;
+            overflow-wrap: break-word;
+        }
+
+        /* Cookie table style */
+        .cookie-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .cookie-table th, .cookie-table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .cookie-table th {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .cookie-table td {
+            font-size: 0.95rem;
+        }
+
+        .cookie-table tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .no-cookies {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Explanation cards */
+        .info-card {
+            background: rgba(14, 165, 233, 0.04);
+            border: 1px solid rgba(14, 165, 233, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .info-card svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent-secondary);
+            flex-shrink: 0;
+        }
+
+        .info-card h4 {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+
+        .info-card p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>CGI Gateway Sandbox</h1>
+                <p>Interactive playground to test and inspect Python CGI script execution on Webserv 1.0</p>
+            </div>
+            <a href="/" class="back-btn">
+                <svg style="width:18px;height:18px;stroke:currentColor;fill:none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Slider
+            </a>
+        </header>
+
+        <div class="sandbox-layout">
+            <!-- Navigation Sidebar -->
+            <div class="sidebar">
+                <button class="tab-btn active" onclick="switchTab('hello')">
+                    <svg viewBox="0 0 24 24"><path d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Hello Generator
+                </button>
+                <button class="tab-btn" onclick="switchTab('calc')">
+                    <svg viewBox="0 0 24 24"><path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    Math Engine
+                </button>
+                <button class="tab-btn" onclick="switchTab('env')">
+                    <svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Environment Inspection
+                </button>
+                <button class="tab-btn" onclick="switchTab('cookie')">
+                    <svg viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    Cookie Manager
+                </button>
+                <button class="tab-btn" onclick="switchTab('upload')">
+                    <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    CGI File Upload
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="showcase-area">
+                
+                <!-- Hello Generator Tab -->
+                <div class="panel active" id="panel-hello">
+                    <div class="panel-header">
+                        <h2>
+                            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            CGI Hello Generator
+                        </h2>
+                        <p>Interact with <code>get_hello.py</code>. This script reads GET or POST parameter inputs (<code>first_name</code> & <code>last_name</code>) parsed by the CGI gateway and prints dynamic greetings.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hello-first">First Name</label>
+                            <input type="text" id="hello-first" placeholder="TinTin" value="TinTin">
+                        </div>
+                        <div class="form-group">
+                            <label for="hello-last">Last Name</label>
+                            <input type="text" id="hello-last" placeholder="Winata" value="Winata">
+                        </div>
+                    </div>
+
+                    <div class="btn-container">
+                        <button class="action-btn primary" onclick="runHello(false)">
+                            <svg style="width:16px;height:16px;fill:currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            Run Script (AJAX Fetch)
+                        </button>
+                        <button class="action-btn secondary" onclick="runHello(true)">
+                            <svg style="width:16px;height:16px;stroke:currentColor;fill:none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Standard Form (New Tab)
+                        </button>
+                    </div>
+
+                    <div class="info-card">
+                        <svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <div>
+                            <h4>How standard form submission works:</h4>
+                            <p>Clicking "Standard Form" will instruct the browser to make a traditional GET navigation request. The server launches the python subprocess, pipes the parsed query string into the script, captures stdout, and streams the finished page directly back into a new tab.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Math Engine Tab -->
+                <div class="panel" id="panel-calc">
+                    <div class="panel-header">
+                        <h2>
+                            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                            CGI Math Engine
+                        </h2>
+                        <p>Interact with <code>calc.py</code>. It accepts query fields <code>f_num</code> (first operand), <code>oper</code> (arithmetic symbol), and <code>s_num</code> (second operand), performs server-side math, and outputs parsed C++ / Python values.</p>
+                    </div>
+
+                    <div class="form-row" style="grid-template-columns: 1fr 120px 1fr;">
+                        <div class="form-group">
+                            <label for="calc-num1">First Number</label>
+                            <input type="number" id="calc-num1" value="42" max="10000">
+                        </div>
+                        <div class="form-group">
+                            <label for="calc-oper">Operator</label>
+                            <select id="calc-oper">
+                                <option value="+">Add (+)</option>
+                                <option value="-">Subtract (-)</option>
+                                <option value="*">Multiply (*)</option>
+                                <option value="/">Divide (/)</option>
+                                <option value="^">Power (^)</option>
+                                <option value="r">Root (r)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="calc-num2">Second Number</label>
+                            <input type="number" id="calc-num2" value="5" max="10000">
+                        </div>
+                    </div>
+
+                    <div class="btn-container">
+                        <button class="action-btn primary" onclick="runCalc()">
+                            <svg style="width:16px;height:16px;fill:currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            Compute (AJAX)
+                        </button>
+                    </div>
+
+                    <div class="info-card">
+                        <svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <div>
+                            <h4>Dynamic Validation & Limits:</h4>
+                            <p>The backend <code>calc.py</code> handles security validation by ensuring the inputs are strictly digits and oper is a valid character. It also enforces a maximum limit of 10,000 to prevent CPU exhaustion on exponential operations, throwing error pages if violated!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Environment Inspector Tab -->
+                <div class="panel" id="panel-env">
+                    <div class="panel-header">
+                        <h2>
+                            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            CGI Environment Variables
+                        </h2>
+                        <p>Interact with <code>env.py</code>. Running this script reveals the comprehensive environment array setup by your C++ webserv server. These meta-variables provide essential CGI details like <code>REQUEST_METHOD</code>, <code>PATH_INFO</code>, <code>CONTENT_TYPE</code>, and HTTP client headers.</p>
+                    </div>
+
+                    <div class="btn-container">
+                        <button class="action-btn primary" onclick="runEnv()">
+                            <svg style="width:16px;height:16px;fill:currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            Fetch Environment Details
+                        </button>
+                    </div>
+
+                    <div class="info-card">
+                        <svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <div>
+                            <h4>The CGI Protocol Bridge:</h4>
+                            <p>CGI (Common Gateway Interface) passes request information to script files by using <strong>Environment Variables</strong>. For example, the query string is written directly into <code>os.environ['QUERY_STRING']</code>, and client request headers are prefixed with <code>HTTP_</code> and made uppercase.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cookie Manager Tab -->
+                <div class="panel" id="panel-cookie">
+                    <div class="panel-header">
+                        <h2>
+                            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                            CGI Cookie Manager
+                        </h2>
+                        <p>Interact with cookie handlers <code>set_cookie.py</code>, <code>get_cookie.py</code>, and <code>cookie.py</code>. This sandbox allows you to write custom key-values, and showcase how your CGI pipeline parses, stores, and sends HTTP cookies dynamically.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cookie-key">Cookie Key</label>
+                            <input type="text" id="cookie-key" placeholder="user_session" value="hollow_knight_name">
+                        </div>
+                        <div class="form-group">
+                            <label for="cookie-value">Cookie Value</label>
+                            <input type="text" id="cookie-value" placeholder="Hornet_Steel_Needle" value="Ghost_Of_Hallownest">
+                        </div>
+                    </div>
+
+                    <div class="btn-container">
+                        <button class="action-btn primary" onclick="setCookie()">
+                            <svg style="width:16px;height:16px;stroke:currentColor;fill:none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Set Cookie
+                        </button>
+                        <button class="action-btn secondary" onclick="getCookie()">
+                            <svg style="width:16px;height:16px;stroke:currentColor;fill:none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            Get Cookie by Key
+                        </button>
+                        <button class="action-btn secondary" onclick="listCookies()">
+                            <svg style="width:16px;height:16px;stroke:currentColor;fill:none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                            List All Cookies
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 25px; border: 1px solid rgba(255,255,255,0.05); border-radius:14px; padding:15px; background:rgba(0,0,0,0.2);">
+                        <h4 style="font-size:0.85rem; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:10px;">Browser Cookie Storage</h4>
+                        <div id="cookie-display-table">
+                            <!-- Populated dynamically -->
+                            <div class="no-cookies">Click "List All Cookies" to fetch cookies from active session!</div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <div>
+                            <h4>How HTTP Cookie flow works:</h4>
+                            <p>When you set a cookie, the Python CGI output includes a <code>Set-Cookie</code> header which your Webserv transmits back to the browser. The browser stores this value. In all subsequent requests, the browser adds a <code>Cookie</code> header, which your Webserv feeds into the <code>HTTP_COOKIE</code> environment variable for the script to load!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CGI File Upload Tab -->
+                <div class="panel" id="panel-upload">
+                    <div class="panel-header">
+                        <h2>
+                            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            CGI Multi-Part File Upload
+                        </h2>
+                        <p>Interact with <code>upload.py</code>. This showcases processing a full multi-part POST file upload via CGI. The script processes the raw HTTP stdin, parses boundary files, and writes the output payload into the server's <code>/tmp</code> directory.</p>
+                    </div>
+
+                    <div class="cgi-upload-zone" onclick="document.getElementById('cgi-file-input').click()">
+                        <!-- Sealed Envelope Graphic -->
+                        <svg style="width:48px;height:48px;stroke:var(--text-muted);margin:0 auto 10px;display:block;" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                        </svg>
+                        <p>Drop a file here, or <span>browse</span> to upload via Python CGI</p>
+                        <input type="file" id="cgi-file-input" style="display:none;" onchange="handleCgiFileSelect(event)">
+                    </div>
+                    <div id="cgi-upload-status" style="display:none; padding:12px; border-radius:10px; font-size:0.9rem; margin-bottom:15px;"></div>
+
+                    <div class="btn-container" style="margin-top:0;">
+                        <button class="action-btn primary" id="cgi-upload-btn" onclick="runCgiUpload()" disabled>
+                            <svg style="width:16px;height:16px;fill:currentColor" viewBox="0 0 24 24"><path d="M4 19h16v-2H4v2zm0-4h16v-2H4v2zm0-4h16V9H4v2zm0-4h16V5H4v2z" /></svg>
+                            Submit Multipart Form (POST)
+                        </button>
+                    </div>
+
+                    <div class="info-card">
+                        <svg viewBox="0 0 24 24" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <div>
+                            <h4>CGI POST vs C++ native POST:</h4>
+                            <p>Unlike standard C++ POST routing (which is handled natively by the server logic in <code>/uploads</code>), CGI file uploads route the POST request body into the Python process's **standard input (stdin)**. Python reads the bytes, respects <code>CONTENT_LENGTH</code>, and handles the multipart boundaries manually!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE HTTP TERMINAL INSPECTOR -->
+                <div class="inspector-panel">
+                    <div class="inspector-header">
+                        <div class="inspector-title">
+                            <span class="dot" id="inspector-dot"></span>
+                            <span>LIVE CGI GATEWAY MONITOR</span>
+                        </div>
+                        <div class="meta-stats">
+                            <span>Status: <strong id="res-status-code">IDLE</strong></span>
+                            <span>Latency: <strong id="res-time">0 ms</strong></span>
+                        </div>
+                    </div>
+                    <div class="inspector-body">
+                        <!-- Request Column -->
+                        <div class="inspector-column request">
+                            <h3>OUTGOING HTTP REQUEST</h3>
+                            <div class="code-block" id="req-block">No requests monitored yet. Trigger any action above to inspect headers!</div>
+                        </div>
+                        <!-- Response Column -->
+                        <div class="inspector-column response">
+                            <h3>RAW CGI GATEWAY RESPONSE</h3>
+                            <div class="code-block" id="res-block">No output captured.</div>
+                        </div>
+                    </div>
+                    <div class="preview-container">
+                        <h3>HTML Output Preview</h3>
+                        <div class="live-preview" id="html-preview">
+                            <p style="color: #64748b; font-style: italic; text-align: center; margin-top: 10px;">CGI output will be rendered here dynamically in a sandboxed layout...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Track the selected CGI file
+        let selectedCgiFile = null;
+
+        // Switch panel tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+            
+            // Find the button and activate it
+            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.outerHTML.includes(tabId));
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            const panel = document.getElementById(`panel-${tabId}`);
+            if (panel) panel.classList.add('active');
+        }
+
+        // Helper to log requests and responses in our terminal
+        function logTraffic(reqMethod, reqUrl, reqHeaders, reqBody, resStatus, resStatusText, resHeaders, resBody, latency) {
+            const dot = document.getElementById('inspector-dot');
+            dot.className = 'dot green';
+
+            document.getElementById('res-status-code').textContent = `${resStatus} ${resStatusText}`;
+            document.getElementById('res-time').textContent = `${latency} ms`;
+
+            // Build request raw output
+            let reqText = `<span class="method">${reqMethod}</span> <span class="url">${reqUrl}</span> HTTP/1.1\n`;
+            reqText += `<span class="header-name">Host:</span> <span class="header-val">${window.location.host}</span>\n`;
+            for (let [k, v] of Object.entries(reqHeaders)) {
+                reqText += `<span class="header-name">${k}:</span> <span class="header-val">${v}</span>\n`;
+            }
+            if (reqBody) {
+                reqText += `\n${reqBody}`;
+            }
+            document.getElementById('req-block').innerHTML = reqText;
+
+            // Build response raw output
+            let resText = `HTTP/1.1 <span class="status-code">${resStatus} ${resStatusText}</span>\n`;
+            for (let [k, v] of Object.entries(resHeaders)) {
+                resText += `<span class="header-name">${k}:</span> <span class="header-val">${v}</span>\n`;
+            }
+            resText += `\n${resBody}`;
+            document.getElementById('res-block').innerHTML = resText;
+
+            // Update HTML Preview
+            const preview = document.getElementById('html-preview');
+            preview.innerHTML = resBody;
+        }
+
+        // Clean values for logs
+        function formatHeaders(headers) {
+            const obj = {};
+            headers.forEach((v, k) => {
+                obj[k] = v;
+            });
+            return obj;
+        }
+
+        // --- DYNAMIC ACTIONS ---
+
+        // 1. Hello generator script
+        async function runHello(newTab) {
+            const first = document.getElementById('hello-first').value;
+            const last = document.getElementById('hello-last').value;
+            const path = `/cgi-bin/get_hello.py?first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}`;
+
+            if (newTab) {
+                window.open(path, '_blank');
+                return;
+            }
+
+            const startTime = performance.now();
+            try {
+                const response = await fetch(path);
+                const latency = Math.round(performance.now() - startTime);
+                const body = await response.text();
+                
+                logTraffic(
+                    'GET',
+                    path,
+                    { 'Accept': 'text/html' },
+                    null,
+                    response.status,
+                    response.statusText,
+                    formatHeaders(response.headers),
+                    body,
+                    latency
+                );
+            } catch (err) {
+                alert(`Error fetching hello script: ${err.message}`);
+            }
+        }
+
+        // 2. Compute script
+        async function runCalc() {
+            const num1 = document.getElementById('calc-num1').value;
+            const oper = document.getElementById('calc-oper').value;
+            const num2 = document.getElementById('calc-num2').value;
+            
+            // Encode operands safely
+            const path = `/cgi-bin/calc.py?f_num=${encodeURIComponent(num1)}&oper=${encodeURIComponent(oper)}&s_num=${encodeURIComponent(num2)}`;
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch(path);
+                const latency = Math.round(performance.now() - startTime);
+                const body = await response.text();
+                
+                logTraffic(
+                    'GET',
+                    path,
+                    { 'Accept': 'text/html' },
+                    null,
+                    response.status,
+                    response.statusText,
+                    formatHeaders(response.headers),
+                    body,
+                    latency
+                );
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // 3. Env script
+        async function runEnv() {
+            const path = '/cgi-bin/env.py';
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch(path);
+                const latency = Math.round(performance.now() - startTime);
+                const body = await response.text();
+                
+                logTraffic(
+                    'GET',
+                    path,
+                    { 'Accept': 'text/html' },
+                    null,
+                    response.status,
+                    response.statusText,
+                    formatHeaders(response.headers),
+                    body,
+                    latency
+                );
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // 4. Cookie manager
+        async function setCookie() {
+            const key = document.getElementById('cookie-key').value;
+            const val = document.getElementById('cookie-value').value;
+            
+            if (!key || !val) {
+                alert('Please enter both key and value.');
+                return;
+            }
+
+            const path = `/cgi-bin/set_cookie.py?key=${encodeURIComponent(key)}&value=${encodeURIComponent(val)}`;
+            const startTime = performance.now();
+
+            try {
+                // Fetch to set cookie
+                const response = await fetch(path);
+                const latency = Math.round(performance.now() - startTime);
+                const body = await response.text();
+                
+                logTraffic(
+                    'GET',
+                    path,
+                    { 'Accept': '*/*' },
+                    null,
+                    response.status,
+                    response.statusText,
+                    formatHeaders(response.headers),
+                    body || '[No Body returned (204 No Content)]',
+                    latency
+                );
+
+                // Auto list cookies afterwards
+                setTimeout(listCookies, 600);
+            } catch (err) {
+                alert(`Error setting cookie: ${err.message}`);
+            }
+        }
+
+        async function getCookie() {
+            const key = document.getElementById('cookie-key').value;
+            if (!key) {
+                alert('Please enter a key to retrieve.');
+                return;
+            }
+
+            const path = `/cgi-bin/get_cookie.py?key=${encodeURIComponent(key)}`;
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch(path);
+                const latency = Math.round(performance.now() - startTime);
+                const body = await response.text();
+                
+                logTraffic(
+                    'GET',
+                    path,
+                    { 'Accept': 'text/plain' },
+                    null,
+                    response.status,
+                    response.statusText,
+                    formatHeaders(response.headers),
+                    body,
+                    latency
+                );
+            } catch (err) {
+                alert(`Error retrieving cookie: ${err.message}`);
+            }
+        }
+
+        async function listCookies() {
+            const path = '/cgi-bin/cookie.py';
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch(path);
+                const latency = Math.round(performance.now() - startTime);
+                const body = await response.text();
+                
+                logTraffic(
+                    'GET',
+                    path,
+                    { 'Accept': 'text/html' },
+                    null,
+                    response.status,
+                    response.statusText,
+                    formatHeaders(response.headers),
+                    body,
+                    latency
+                );
+
+                // Populate the cookie storage UI
+                const display = document.getElementById('cookie-display-table');
+                
+                // Read client-side cookies directly as well
+                const rawCookies = document.cookie;
+                if (!rawCookies) {
+                    display.innerHTML = '<div class="no-cookies">No active client cookies detected in document.cookie.</div>';
+                    return;
+                }
+
+                let html = '<table class="cookie-table"><thead><tr><th>Cookie Key</th><th>Current Value</th></tr></thead><tbody>';
+                const parts = rawCookies.split(';');
+                parts.forEach(p => {
+                    const eq = p.indexOf('=');
+                    const k = eq > -1 ? p.substring(0, eq).trim() : p.trim();
+                    const v = eq > -1 ? p.substring(eq + 1).trim() : '';
+                    html += `<tr><td><strong>${escapeHtml(k)}</strong></td><td><code>${escapeHtml(v)}</code></td></tr>`;
+                });
+                html += '</tbody></table>';
+                display.innerHTML = html;
+
+            } catch (err) {
+                alert(`Error listing cookies: ${err.message}`);
+            }
+        }
+
+        // Escape utility
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, function (s) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[s];
+            });
+        }
+
+        // 5. File upload zone actions
+        function handleCgiFileSelect(event) {
+            const file = event.target.files[0];
+            const status = document.getElementById('cgi-upload-status');
+            const submitBtn = document.getElementById('cgi-upload-btn');
+
+            if (file) {
+                selectedCgiFile = file;
+                status.className = 'status-box status-success';
+                status.style.display = 'block';
+                status.style.background = 'rgba(16, 185, 129, 0.08)';
+                status.style.color = '#34d399';
+                status.innerHTML = `Ready to upload: <strong>${escapeHtml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+                submitBtn.disabled = false;
+            } else {
+                selectedCgiFile = null;
+                status.style.display = 'none';
+                submitBtn.disabled = true;
+            }
+        }
+
+        async function runCgiUpload() {
+            if (!selectedCgiFile) return;
+
+            const path = '/cgi-bin/upload.py';
+            const status = document.getElementById('cgi-upload-status');
+            const submitBtn = document.getElementById('cgi-upload-btn');
+
+            // Construct multipart form body
+            const formData = new FormData();
+            formData.append('filename', selectedCgiFile, selectedCgiFile.name);
+
+            status.style.background = 'rgba(255, 255, 255, 0.05)';
+            status.style.color = '#94a3b8';
+            status.innerHTML = 'Uploading file via Python CGI multipart gateway...';
+            submitBtn.disabled = true;
+
+            const startTime = performance.now();
+            try {
+                const response = await fetch(path, {
+                    method: 'POST',
+                    body: formData
+                });
+                const latency = Math.round(performance.now() - startTime);
+                const body = await response.text();
+
+                logTraffic(
+                    'POST',
+                    path,
+                    { 'Content-Type': 'multipart/form-data; boundary=----CGIWebservBoundary' },
+                    `[Multipart Form Payload containing file "${selectedCgiFile.name}"]`,
+                    response.status,
+                    response.statusText,
+                    formatHeaders(response.headers),
+                    body,
+                    latency
+                );
+
+                status.className = 'status-box status-success';
+                status.style.background = 'rgba(16, 185, 129, 0.08)';
+                status.style.color = '#34d399';
+                status.innerHTML = `File successfully processed by Python CGI backend script!`;
+            } catch (err) {
+                status.className = 'status-box status-error';
+                status.style.background = 'rgba(230, 34, 50, 0.08)';
+                status.style.color = '#f87171';
+                status.innerHTML = `Upload failed: ${err.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Support drag & drop on CGI zone
+        const dropzone = document.querySelector('.cgi-upload-zone');
+        ['dragenter', 'dragover'].forEach(name => {
+            dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--accent-primary)'; }, false);
+        });
+        ['dragleave', 'drop'].forEach(name => {
+            dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.style.borderColor = 'rgba(230, 34, 50, 0.25)'; }, false);
+        });
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                const fileInput = document.getElementById('cgi-file-input');
+                fileInput.files = files;
+                handleCgiFileSelect({ target: fileInput });
+            }
+        });
+    </script>
+</body>
+</html>

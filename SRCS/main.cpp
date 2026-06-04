@@ -18,6 +18,7 @@ int	main(int argc, char *argv[])
 	}
 	try
 	{
+		// signal(SIGPIPE, SIG_IGN); In case of siege failed crashing the server, this is to prevent OS terminating our server due to client abruptly pipe closing (ie: ctrl+c)
 		if (argc == 2)
 		{
 			WebServer	webserv(argv[1]);

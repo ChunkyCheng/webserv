@@ -96,6 +96,11 @@ void	Client::sendMessage(void)
 		_requestHandler.continueBuildResponse();
 	if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
 	{
+		if (_requestHandler.getShouldCloseConnection())
+		{
+			_server.deleteClient(_socket.getFd());
+			return ;
+		}
 		_requestHandler.reset();
 		if (!_request_buff.empty())
 		{
@@ -110,7 +115,15 @@ void	Client::sendMessage(void)
 	}
 	len = send(_socket.getFd(), _response_buff.c_str(), _response_buff.size(), 0);
 	if (len == -1)
+	{
 		std::cerr << strerror(errno) << std::endl;
+		// In case of server running infinite loop on broken pipe/bad client/bad fd, delete client, can preserve server resources too
+		// if (errno != EAGAIN && errno != EWOULDBLOCK)
+		// {
+		// 	std::cerr << strerror(errno) << std::endl;
+		// 	_server.deleteClient(_socket.getFd());
+		// }
+	}
 	else
 		_response_buff.erase(0, len);
 }

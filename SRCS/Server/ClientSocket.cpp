@@ -21,7 +21,7 @@ void	ClientSocket::handleEvent(int events)
 {
 	if (events & EPOLLOUT)
 		_client.sendMessage();
-	if (events & EPOLLIN)
+	else if (events & EPOLLIN) // changed from if to else if to prevent reading into client that are already gone in the first place
 		_client.recvMessage();
 }
 

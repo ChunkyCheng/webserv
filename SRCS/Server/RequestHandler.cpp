@@ -127,7 +127,8 @@ void	RequestHandler::buildResponseData(void)
 			buildErrorOrRedirectResponse(status);
 		}
 	}
-	assembleFinalBuffer();
+	if (_res_state != RES_CGI_BODY)
+		assembleFinalBuffer();
 }
 
 void	RequestHandler::continueBuildResponse(void)
@@ -173,8 +174,8 @@ void	RequestHandler::continueBuildResponse(void)
 
 HttpStatus	RequestHandler::executeMethod()
 {
-	std::string physical_path = getNormalPagePath();
 	std::string method = _httpRequest.getMethod();
+	std::string physical_path = getNormalPagePath();
 	if (method == "GET")
 	{
 		handleGetMethod(physical_path);
@@ -267,9 +268,18 @@ std::string RequestHandler::buildSafeUploadPath(const std::string& physical_path
 		if (pos == std::string::npos)
 			name = sanitizeFilename(physical_path);
 		else
-			name = sanitizeFilename(physical_path.substr(pos + 1));
+		{
+			std::string extracted = physical_path.substr(pos + 1);
+			if (extracted.empty() || extracted == "uploads")
+			{
+				name = "";
+			}
+			else
+			{
+				name = sanitizeFilename(physical_path.substr(pos + 1));
+			}
+		}
 	}
-
 	if (name.empty())
 	{
 		// generate fallback name
@@ -277,7 +287,6 @@ std::string RequestHandler::buildSafeUploadPath(const std::string& physical_path
 		ss << "upload_" << std::time(NULL) << "_" << getpid();
 		name = ss.str();
 	}
-
 	// ensure base_dir ends without '/'
 	if (!base_dir.empty() && base_dir[base_dir.length() - 1] == '/')
 		base_dir.erase(base_dir.length() - 1);
@@ -320,9 +329,11 @@ std::string RequestHandler::sanitizeFilename(const std::string& filename) const
 
 bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<std::string, std::string>& headers, std::string& out_filename, std::string& out_filecontent) const
 {
+	// Looks up content-type header
 	std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
 	if (it == headers.end())
 		return false;
+	// Cuts out everything after the boundary=, leaving with maybe "cool-boundary123"
 	std::string ctype = it->second;
 	std::string boundary_key = "boundary=";
 	size_t bpos = ctype.find(boundary_key);
@@ -335,25 +346,46 @@ bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<
 		boundary = boundary.substr(1, boundary.length() - 2);
 	}
 	std::string delim = "--" + boundary;
-
+	// find where first boundary starts
 	size_t part_start = body.find(delim);
 	if (part_start == std::string::npos)
 		return false;
 	// move to end of boundary line
 	size_t line_end = body.find("\r\n", part_start);
+	size_t step = 2;
+	if (line_end == std::string::npos)
+	{
+		line_end = body.find("\n", part_start);
+		step = 1;
+	}
 	if (line_end == std::string::npos)
 		return false;
-	size_t hdr_start = line_end + 2;
+	// usually pointing to the start of content disposition
+	size_t hdr_start = line_end + step;
 	size_t hdr_end = body.find("\r\n\r\n", hdr_start);
+	size_t dlen = 4;
+	if (hdr_end == std::string::npos)
+	{
+		hdr_end = body.find("\n\n", hdr_start);
+		dlen = 2;
+	}
 	if (hdr_end == std::string::npos)
 		return false;
+	// part-headers simply have content-disposition, content type header, mostly
 	std::string part_headers = body.substr(hdr_start, hdr_end - hdr_start);
 	std::string filename;
 	// parse part headers
 	size_t pos = 0;
 	while (pos < part_headers.size())
 	{
+		// eol = end of line, find the first header, which is usually content disposition
 		size_t eol = part_headers.find("\r\n", pos);
+		size_t line_step = 2;
+		if (eol == std::string::npos)
+		{
+			eol = part_headers.find("\n", pos);
+			line_step = 1;
+		}
 		std::string line;
 		if (eol == std::string::npos)
 		{
@@ -363,43 +395,49 @@ bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<
 		else
 		{
 			line = part_headers.substr(pos, eol - pos);
-			pos = eol + 2;
+			pos = eol + line_step;
 		}
+		if (!line.empty() && line[line.length() - 1] == '\r')
+			line.erase(line.length() - 1);
 		// look for Content-Disposition
 		std::string low = line;
 		std::transform(low.begin(), low.end(), low.begin(), ::tolower);
 		if (low.find("content-disposition:") == 0)
 		{
-			size_t fname_pos = line.find("filename=");
+			size_t fname_pos = low.find("filename=");
 			if (fname_pos != std::string::npos)
 			{
-				size_t q = line.find('"', fname_pos);
-				if (q != std::string::npos)
-				{
-					size_t q2 = line.find('"', q + 1);
-					if (q2 != std::string::npos)
-						filename = line.substr(q + 1, q2 - q - 1);
-				}
+				size_t val_start = fname_pos + 9;
+				size_t endpos = line.find(';', val_start);
+				if (endpos == std::string::npos)
+					endpos = line.length();
+				filename = line.substr(val_start, endpos - val_start);
+				
+				// Trim spaces, tabs, and quotes
+				size_t start_idx = filename.find_first_not_of(" \t\r\n\"");
+				if (start_idx == std::string::npos)
+					filename = "";
 				else
 				{
-					// unquoted value until semicolon or end
-					size_t endpos = line.find(';', fname_pos);
-					if (endpos == std::string::npos)
-						endpos = line.length();
-					filename = line.substr(fname_pos + 9, endpos - (fname_pos + 9));
+					size_t end_idx = filename.find_last_not_of(" \t\r\n\"");
+					filename = filename.substr(start_idx, end_idx - start_idx + 1);
 				}
 			}
 		}
 	}
 	if (filename.empty())
 		return false;
-
-	size_t content_start = hdr_end + 4;
+	size_t content_start = hdr_end + dlen;
+	// the end of the body content looks like \r\n--cool-boundary--\r\n
 	std::string boundary_search = "\r\n" + delim;
 	size_t content_end = body.find(boundary_search, content_start);
 	if (content_end == std::string::npos)
 	{
-		// try without preceding CRLF
+		boundary_search = "\n" + delim;
+		content_end = body.find(boundary_search, content_start);
+	}
+	if (content_end == std::string::npos)
+	{
 		content_end = body.find(delim, content_start);
 		if (content_end == std::string::npos)
 			return false;
@@ -408,6 +446,8 @@ bool RequestHandler::parseMultipartFile(const std::string& body, const std::map<
 	// strip trailing CRLF if present
 	if (out_filecontent.size() >= 2 && out_filecontent.substr(out_filecontent.size() - 2) == "\r\n")
 		out_filecontent.erase(out_filecontent.size() - 2);
+	else if (out_filecontent.size() >= 1 && out_filecontent[out_filecontent.size() - 1] == '\n')
+		out_filecontent.erase(out_filecontent.size() - 1);
 
 	out_filename = filename;
 	return true;
@@ -495,18 +535,10 @@ HttpStatus RequestHandler::validateRequestLocation()
 	return (OK);
 }
 
-bool	RequestHandler::isCgiExtension(std::string &ext)
+bool	RequestHandler::isCgiExtension(std::string& ext)
 {
-	const char* valid_ext[] = {".py", ".php", ".cgi"};
-	size_t num_ext = sizeof(valid_ext) / sizeof(valid_ext[0]);
-	for (size_t i = 0; i < num_ext; ++i)
-	{
-		if (ext == valid_ext[i])
-		{
-			return (true);
-		}
-	}
-	return (false);
+	const std::map<std::string, std::string>& cgiMap = _location->getCgiMap();
+	return (cgiMap.find(ext) != cgiMap.end());
 }
 
 bool	RequestHandler::readFileContent(const std::string& file_path, std::string& body_content)
@@ -562,14 +594,6 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 		return ("");
 	}
 	std::string custom_path = it->second;
-	// This will be commented out because config returns absolute path for error pages for now
-	// std::string root = target_location->getRoot();
-	// if (!root.empty() && root[root.length() - 1] != '/' && !custom_path.empty() && custom_path[0] != '/')
-	// {
-		// 	root += "/";
-		// }
-		// std::string full_path = root + custom_path;
-		// std::cout << "Error page full path: " << full_path << "\n";
 		struct stat file_stat;
 		if (stat(custom_path.c_str(), &file_stat) == 0)
 		{
@@ -807,6 +831,7 @@ void	RequestHandler::reset(void)
 	_res_state = RES_HEADERS;
 	_handler_error_code = NONE;
 	_should_close_connection = false;
+	_is_cgi = false;
 	_location = NULL;
 	_httpRequest.reset();
 	_httpResponse.reset();
@@ -822,6 +847,7 @@ bool	RequestHandler::getShouldCloseConnection(void) const
 {
 	return (_should_close_connection);
 }
+
 
 static std::string normalizePath(const std::string& path)
 {

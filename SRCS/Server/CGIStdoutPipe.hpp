@@ -1,9 +1,13 @@
 #ifndef CGISTDOUTPIPE_HPP
 # define CGISTDOUTPIPE_HPP
 
+# include "ISocket.hpp"
+# include "CGIHandler.hpp"
+# include <sys/epoll.h>
+
 class CGIHandler;
 
-class CGIStdoutPipe: public Isocket
+class CGIStdoutPipe: public ISocket
 {
 	public:
 		CGIStdoutPipe(int fd, CGIHandler& parent);
@@ -19,6 +23,6 @@ class CGIStdoutPipe: public Isocket
 
 		int		_fd;
 		CGIHandler&	_parent;
-}
+};
 
 #endif

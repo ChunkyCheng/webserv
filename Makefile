@@ -22,7 +22,8 @@ SERVER_FILES	=	WebServer.cpp		Epoll.cpp			\
 					Server.cpp			ServerSocket.cpp	\
 					Client.cpp			ClientSocket.cpp	\
 					Location.cpp							\
-					RequestHandler.cpp
+					RequestHandler.cpp	\
+					CGIStdinPipe.cpp	CGIStdoutPipe.cpp	CGIHandler.cpp
 
 UTILS_DIR		=	utils
 

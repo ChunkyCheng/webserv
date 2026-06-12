@@ -1,13 +1,16 @@
 #ifndef CGI_HANDLER_HPP
 # define CGI_HANDLER_HPP
 
-#include <string>
-#include <vector>
-#include <ctime>
-#include "Epoll.hpp"
-#include "ISocket.hpp"
-#include "CGIStdinPipe.hpp
-#include "CGIStdoutPipe.hpp"
+
+# include <string>
+# include <vector>
+# include <ctime>
+
+
+class Epoll;
+class ISocket;
+class CGIStdinPipe;
+class CGIStdoutPipe;
 
 class	CGIHandler
 {
@@ -25,6 +28,9 @@ class	CGIHandler
 
 		const std::string&	getOutput(void) const;
 		const time_t&		getStartTime(void) const;
+		void				onStdinReady(void);
+		void				onStdoutReady(void);
+		void				onStdoutHup(void);
 
 	private:
 		CGIHandler(void);
@@ -38,6 +44,8 @@ class	CGIHandler
 		size_t			_bytes_written;
 		std::string		_cgi_output;
 		time_t			_start_time;
+		bool			_error;
+		bool			_complete;
 		Epoll&			_epoll;
 		ISocket&		 _client_socket;
 		CGIStdinPipe*	_stdin_pipe;

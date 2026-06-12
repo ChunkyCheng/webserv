@@ -18,7 +18,7 @@ class	Epoll
 		void	addSocketToPoll(ISocket& socket);
 		void	modAddSendEvent(ISocket& socket);
 		void	modRemoveSendEvent(ISocket& socket);
-		void	addSocketWithEvent(ISocket& socket, uint32_t events);
+		void	addSocketWithEvent(ISocket& socket, int events);
 		void	removeSocket(ISocket& socket);
 		void	runEvents(void);
 

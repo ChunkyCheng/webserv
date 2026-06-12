@@ -51,7 +51,7 @@ void	Epoll::modRemoveSendEvent(ISocket& socket)
 	epoll_ctl(_fd, EPOLL_CTL_MOD, socket.getFd(), &epoll_event);
 }
 
-void	Epoll::addSocketWithEvent(ISocket& socket, uint32_t events)
+void	Epoll::addSocketWithEvent(ISocket& socket, int events)
 {
 	struct epoll_event	epoll_event;
 

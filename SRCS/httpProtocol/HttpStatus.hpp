@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpStatus.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yelu <yelu@student.42kl.edu.my>            +#+  +:+       +#+        */
+/*   By: akok <akok@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/09 00:22:16 by yelu              #+#    #+#             */
-/*   Updated: 2026/05/14 02:32:10 by yelu             ###   ########.fr       */
+/*   Updated: 2026/06/12 15:09:11 by akok             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,8 @@ enum HttpStatus
 	PAYLOAD_TOO_LARGE = 413,
 	INTERNAL_SERVER_ERROR = 500,
 	NOT_IMPLEMENTED = 501,
+	BAD_GATEWAY = 502,
+	GATEWAY_TIMEOUT = 504,
 	HTTP_VERSION_NOT_SUPPORTED = 505
 };
 

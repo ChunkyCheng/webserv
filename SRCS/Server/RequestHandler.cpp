@@ -1,4 +1,5 @@
 #include "RequestHandler.hpp"
+#include "Epoll.hpp"
 #include <cstdlib>
 #include <cstdio>
 #include <unistd.h>
@@ -1013,7 +1014,7 @@ void RequestHandler::_spawnCgi(void)
 
 	std::vector<std::string> env = _buildCgiEnv();
 
-	_cgi_handler = new CgiHandler(interpreter, script_path, working_dir,
+	_cgi_handler = new CGIHandler(interpreter, script_path, working_dir,
 								_httpRequest.getBody(), env, _epoll, _client_socket);
 
 	if (_cgi_handler->hasError()) {
@@ -1027,7 +1028,7 @@ void RequestHandler::_spawnCgi(void)
 	_res_state = RES_CGI_BODY;
 }
 
-void RequesHandler::_parseCgiOutput(const std::string& cgi_output)
+void RequestHandler::_parseCgiOutput(const std::string& cgi_output)
 {
 	size_t sep = cgi_output.find("\r\n\r\n");
 	size_t sep_len = 4;
@@ -1040,7 +1041,7 @@ void RequesHandler::_parseCgiOutput(const std::string& cgi_output)
 	std::string header_block;
 	std::string body;
 	if (sep == std::string::npos) {
-		body = raw;
+		body = cgi_output;
 	} else {
 		header_block = cgi_output.substr(0, sep);
 		body = cgi_output.substr(sep + sep_len);
@@ -1086,13 +1087,13 @@ void RequesHandler::_parseCgiOutput(const std::string& cgi_output)
 		}
 		_httpResponse.setBody(body);
 
-		std::ostringsteam oss;
+		std::ostringstream oss;
 		oss << body.size();
 		_httpResponse.overwriteHeader("Content-Length", oss.str());
 	}
 }
 
-void RequestHandler::isCgiPending(void) const
+bool RequestHandler::isCgiPending(void) const
 {
 	return _cgi_handler != NULL;
 }

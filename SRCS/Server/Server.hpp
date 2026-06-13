@@ -24,6 +24,7 @@ class	Server
 
 		const std::vector<Location>&	getLocations(void) const;
 		const std::vector<std::string>&	getSocketAddr(void) const;
+		void		checkCgiTimeouts(time_t now, int timeout_secs);
 	
 	private:
 		WebServer&						_webserver;

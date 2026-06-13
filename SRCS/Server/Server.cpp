@@ -1,4 +1,4 @@
-#include "Server.hpp"
+ #include "Server.hpp"
 #include "WebServer.hpp"
 #include "Client.hpp"
 #include "Epoll.hpp"
@@ -91,4 +91,9 @@ std::ostream&	operator<<(std::ostream& os, const Server& obj)
 const char*	Server::NoListeningSocketsException::what(void) const throw()
 {
 	return ("Server::NoListeningSocketsException");
+}
+
+const std::vector<std::string>&	Server::getSocketAddr(void) const
+{
+	return (_socket_addr);
 }

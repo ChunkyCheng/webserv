@@ -141,6 +141,26 @@ void	RequestHandler::buildResponseData(void)
 
 void	RequestHandler::continueBuildResponse(void)
 {
+	if (_res_state == RES_CGI_BODY)
+	{
+		if (_cgi_handler && _cgi_handler->hasError())
+		{
+			delete _cgi_handler;
+			_cgi_handler = NULL;
+			buildErrorOrRedirectResponse(INTERNAL_SERVER_ERROR);
+			assembleFinalBuffer();
+			_res_state = RES_FINISHED;
+		}
+		else if (_cgi_handler && _cgi_handler->isComplete())
+		{
+			_parseCgiOutput(_cgi_handler->getOutput());
+			delete _cgi_handler;
+			_cgi_handler = NULL;
+			assembleFinalBuffer();
+			_res_state = RES_FINISHED;
+		}
+		return ;
+	}
 	if (_res_state == RES_HEADERS)
 	{
 		_res_state = RES_BODY;
@@ -1071,3 +1091,28 @@ void RequesHandler::_parseCgiOutput(const std::string& cgi_output)
 		_httpResponse.overwriteHeader("Content-Length", oss.str());
 	}
 }
+
+void RequestHandler::isCgiPending(void) const
+{
+	return _cgi_handler != NULL;
+}
+
+time_t RequestHandler::getCgiStartTime(void) const
+{
+	if (!_cgi_handler)
+		return (0);
+	return _cgi_handler->getStartTime();
+}
+
+void RequestHandler::abortCgi(void)
+{
+	if (!_cgi_handler)
+		return;
+	_cgi_handler->killProcess();
+	delete _cgi_handler;
+	_cgi_handler = NULL;
+	buildErrorOrRedirectResponse(GATEWAY_TIMEOUT);
+	assembleFinalBuffer();
+	_epoll.modAddSendEvent(_client_socket);
+}
+

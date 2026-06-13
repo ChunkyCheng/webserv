@@ -23,6 +23,7 @@ class	Server
 		void		deleteClient(int client_fd);
 
 		const std::vector<Location>&	getLocations(void) const;
+		const std::vector<std::string>&	getSocketAddr(void) const;
 	
 	private:
 		WebServer&						_webserver;

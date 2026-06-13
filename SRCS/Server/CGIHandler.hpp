@@ -28,9 +28,13 @@ class	CGIHandler
 
 		const std::string&	getOutput(void) const;
 		const time_t&		getStartTime(void) const;
+		const pid_t&		getPid(void) const;
 		void				onStdinReady(void);
 		void				onStdoutReady(void);
 		void				onStdoutHup(void);
+		bool				hasError(void) const;
+		bool				isComplete(void) const;
+		void				killProcess(void);
 
 	private:
 		CGIHandler(void);

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <cstdlib>
+#include <sys/wait.h>
 
 static char** buildArgv(const std::string& interpreter, const std::string& script_path) {
 	char** argv = new char*[3];
@@ -117,4 +118,114 @@ CGIHandler::CGIHandler(
 
 	_stdout_pipe = new CGIStdoutPipe(_stdout_fd, *this);
 	_epoll.addSocketWithEvent(*_stdout_pipe, EPOLLIN);
+}
+
+/* Called when the stdin socket is ready for writing */
+void CGIHandler::onStdinReady (void) {
+	if (_stdin_fd == -1)
+		return;
+
+	if (_bytes_written >= _request_body.size()) {
+		_epoll.removeSocket(*_stdin_pipe);
+		close(_stdin_fd);
+		_stdin_fd = -1;
+		return ;
+	}
+
+	ssize_t n = write(
+		_stdin_fd,
+		_request_body.c_str() + _bytes_written,
+		_request_body.size() - _bytes_written);
+	
+	if (n > 0) {
+		_bytes_written += n;
+		if (_bytes_written >= _request_body.size()) {
+			_epoll.removeSocket(*_stdin_pipe);
+			close(_stdin_fd);
+			_stdin_fd = -1;
+		}
+	}
+	/* EAGAIN and EWOULDBLOCK are not real errors */
+	else if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+		_epoll.removeSocket(*_stdin_pipe);
+		close(_stdin_fd);
+		_stdin_fd = -1;
+		std::cerr << "Failed to write to CGI stdin: " << strerror(errno) << std::endl;
+	}
+}
+
+void CGIHandler::onStdoutReady(void) {
+
+	if (_complete || _stdout_fd == -1)
+		return;
+	char buffer[4096];
+	ssize_t n = read(_stdout_fd, buffer, sizeof(buffer));
+	if (n > 0)
+		_cgi_output.append(buffer, n);
+}
+
+void CGIHandler::onStdoutHup(void) {
+	if (_complete)
+		return;
+
+	onStdoutReady();
+	_complete = true;
+	if (_stdout_fd != -1) {
+		_epoll.removeSocket(*_stdout_pipe);
+		close(_stdout_fd);
+		_stdout_fd = -1;
+	}
+	_epoll.modAddSendEvent(_client_socket);
+}
+
+const std::string& CGIHandler::getOutput(void) const {
+	return _cgi_output;
+}
+
+const time_t& CGIHandler::getStartTime(void) const {
+	return _start_time;
+}
+
+const pid_t& CGIHandler::getPid(void) const {
+	return _pid;
+}
+
+bool CGIHandler::hasError(void) const {
+	return _error;
+}
+
+bool CGIHandler::isComplete(void) const {
+	return _complete;
+}
+
+void CGIHandler::killProcess(void) {
+	if (_pid < 0)
+		return;
+	kill(_pid, SIGKILL);
+	waitpid(_pid, NULL, 0);
+	_pid = -1;
+}
+
+CGIHandler::~CGIHandler(void) {
+	if (_pid > 0) {
+		killProcess();
+	}
+	if (_stdin_pipe) {
+		if (_stdin_fd != -1) {
+			_epoll.removeSocket(*_stdin_pipe);
+			close(_stdin_fd);
+			_stdin_fd = -1;
+		}
+		delete _stdin_pipe;
+		_stdin_pipe = NULL;
+	}
+	if (_stdout_pipe) {
+		if (_stdout_fd != -1) {
+			_epoll.removeSocket(*_stdout_pipe);
+			close(_stdout_fd);
+			_stdout_fd = -1;
+		}
+		delete _stdout_pipe;
+		_stdout_pipe = NULL;
+	}
 }

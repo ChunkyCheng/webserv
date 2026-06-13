@@ -4,6 +4,7 @@
 #include "socket.h"
 #include "Server.hpp"
 #include "Location.hpp"
+#include "CGIHandler.hpp"
 #include "../httpProtocol/HttpRequest.hpp"
 #include "../httpProtocol/HttpResponse.hpp"
 #include "../httpProtocol/HttpStatus.hpp"
@@ -29,7 +30,7 @@ enum RequestState
 class	RequestHandler
 {
 	public:
-		RequestHandler(Server& server, std::string& req_buff, std::string& res_buff);
+		RequestHandler(Server& server, std::string& req_buff, std::string& res_buff, Epoll& epoll, ISocket& client_socket);
 		~RequestHandler(void);
 	private:
 		RequestHandler(void);
@@ -60,6 +61,10 @@ class	RequestHandler
 		bool			ensureDirExists(const std::string& dir_path) const;
 		std::string		sanitizeFilename(const std::string& filename) const;
 
+		/* CGI helpers */
+		std::vector<std::string>	_buildCgiEnv(void);
+		void						_spawnCgi(void);
+		void						_parseCgiOutput(const std::string& cgi_output);
 
 	public:
 		bool			checkRequestComplete(void) const;
@@ -69,6 +74,10 @@ class	RequestHandler
 		void			buildResponseData(void);
 		void			reset(void);
 		bool			getShouldCloseConnection(void) const;
+		/* CGI related public methods */
+		bool			isCgiPending(void) const;
+		time_t			getCgiStartTime(void) const;
+		void			abortCgi(void);
 
 	protected:
 	private:
@@ -85,6 +94,9 @@ class	RequestHandler
 		std::ifstream	_file_stream;
 		std::string		_redirect_target;
 		bool			_is_cgi;
+		Epoll&			_epoll;
+		ISocket&		_client_socket;
+		CGIHandler*		_cgi_handler;
 
 };
 

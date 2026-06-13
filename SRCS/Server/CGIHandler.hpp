@@ -51,7 +51,7 @@ class	CGIHandler
 		bool			_error;
 		bool			_complete;
 		Epoll&			_epoll;
-		ISocket&		 _client_socket;
+		ISocket&		_client_socket;
 		CGIStdinPipe*	_stdin_pipe;
 		CGIStdoutPipe*	_stdout_pipe;
 };

@@ -101,8 +101,6 @@ const std::vector<std::string>&	Server::getSocketAddr(void) const
 void	Server::checkCgiTimeouts(time_t now, int timeout_secs)
 {
 	std::map<int, Client*>::iterator it;
-
-	for (it = _clients.begin(); it != _clients.end(); ++it) {
+	for (it = _clients.begin(); it != _clients.end(); ++it)
 		it->second->checkCgiTimeout(now, timeout_secs);
-	}
 }

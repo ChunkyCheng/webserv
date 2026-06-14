@@ -11,6 +11,7 @@
 #include <ctime>
 #include <cerrno>
 #include <cstring>
+#include <climits>
 
 
 RequestHandler::RequestHandler(Server& server,
@@ -154,9 +155,18 @@ void	RequestHandler::continueBuildResponse(void)
 		}
 		else if (_cgi_handler && _cgi_handler->isComplete())
 		{
-			_parseCgiOutput(_cgi_handler->getOutput());
-			delete _cgi_handler;
-			_cgi_handler = NULL;
+			if (_cgi_handler->getOutput().empty())
+			{
+				delete _cgi_handler;
+				_cgi_handler = NULL;
+				buildErrorOrRedirectResponse(BAD_GATEWAY);
+			}
+			else
+			{
+				_parseCgiOutput(_cgi_handler->getOutput());
+				delete _cgi_handler;
+				_cgi_handler = NULL;
+			}
 			assembleFinalBuffer();
 			_res_state = RES_FINISHED;
 		}
@@ -1006,6 +1016,22 @@ void RequestHandler::_spawnCgi(void)
 {
 	std::string script_path = getNormalPagePath();
 
+	/* Resolve to absolute so chdir in child doesn't break relative argv[1] */
+	char resolved[PATH_MAX];
+	if (realpath(script_path.c_str(), resolved))
+	{
+		script_path = resolved;
+	}
+	else
+	{
+		char cwd[PATH_MAX];
+		if (getcwd(cwd, sizeof(cwd)))
+		{
+			if (!script_path.empty() && script_path[0] != '/')
+				script_path = std::string(cwd) + "/" + script_path;
+		}
+	}
+
 	size_t ext_dot = script_path.find_last_of('.');
 	std::string ext = script_path.substr(ext_dot);
 	std::string interpreter = _location->getCgiMap().find(ext)->second;
@@ -1022,6 +1048,7 @@ void RequestHandler::_spawnCgi(void)
 		_cgi_handler = NULL;
 		buildErrorOrRedirectResponse(INTERNAL_SERVER_ERROR);
 		assembleFinalBuffer();
+		_res_state = RES_FINISHED;
 		return;
 	}
 
@@ -1080,17 +1107,17 @@ void RequestHandler::_parseCgiOutput(const std::string& cgi_output)
 			if (lower_key == "content-type")
 				has_content_type = true;
 		}
-
-		_httpResponse.setStatusCode(cgi_status);
-		if (!has_content_type) {
-			_httpResponse.addHeader("Content-Type", "text/html");
-		}
-		_httpResponse.setBody(body);
-
-		std::ostringstream oss;
-		oss << body.size();
-		_httpResponse.overwriteHeader("Content-Length", oss.str());
 	}
+
+	_httpResponse.setStatusCode(cgi_status);
+	if (!has_content_type) {
+		_httpResponse.addHeader("Content-Type", "text/html");
+	}
+	_httpResponse.setBody(body);
+
+	std::ostringstream oss;
+	oss << body.size();
+	_httpResponse.overwriteHeader("Content-Length", oss.str());
 }
 
 bool RequestHandler::isCgiPending(void) const
@@ -1114,6 +1141,7 @@ void RequestHandler::abortCgi(void)
 	_cgi_handler = NULL;
 	buildErrorOrRedirectResponse(GATEWAY_TIMEOUT);
 	assembleFinalBuffer();
+	_res_state = RES_FINISHED;
 	_epoll.modAddSendEvent(_client_socket);
 }
 

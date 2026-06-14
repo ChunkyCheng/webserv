@@ -78,6 +78,12 @@ void	HttpResponse::setStatusCode(HttpStatus status_code)
 		case NOT_IMPLEMENTED:
 			_reason_phrase = "Not Implemented";
 			break;
+		case BAD_GATEWAY:
+			_reason_phrase = "Bad Gateway";
+			break;
+		case GATEWAY_TIMEOUT:
+			_reason_phrase = "Gateway Timeout";
+			break;
 		case HTTP_VERSION_NOT_SUPPORTED:
 			_reason_phrase = "HTTP Version Not Supported";
 			break;

@@ -28,6 +28,7 @@ class	WebServer
 		static bool				_runServer;
 
 		void	_initServer(const std::string config_path);
+		void	_checkCgiTimeouts(void);
 };
 
 #endif

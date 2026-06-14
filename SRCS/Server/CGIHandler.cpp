@@ -91,8 +91,7 @@ CGIHandler::CGIHandler(
 		close(stdout_fds[0]); close(stdout_fds[1]);
 		chdir(working_dir.c_str());
 		execve(argv[0], argv, envp);
-		std::cerr << "Failed to execute CGI script: " << strerror(errno) << std::endl;
-		exit(1);
+		_exit(1);
 	}
 
 	/* Parent */

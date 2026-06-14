@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WEBSERV — CGI EVAL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0b0e; --bg2: #111318; --bg3: #181c24;
+      --border: #2a2d38; --text: #c8cdd8; --text-dim: #555a6b;
+      --green: #39ff14; --red: #ff3300; --amber: #ffcc00;
+      --cyan: #00e5ff; --white: #f0f2f7;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Space Mono', 'Courier New', monospace;
+      font-size: 13px; height: 100vh;
+      display: grid; grid-template-rows: auto 1fr auto; overflow: hidden;
+    }
+    header {
+      border-bottom: 1px solid var(--border); padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-title { font-size: 14px; font-weight: 700; letter-spacing: .15em; color: var(--white); text-transform: uppercase; }
+    .cursor { display: inline-block; width: 8px; height: 14px; background: var(--green); margin-left: 4px; vertical-align: middle; animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .header-meta { color: var(--text-dim); font-size: 11px; letter-spacing: .1em; }
+    .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 4px var(--green)} 50%{opacity:.4;box-shadow:none} }
+    .main { display: grid; grid-template-columns: 1fr 1.3fr; overflow: hidden; }
+    .tests-pane { border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; }
+    .tests-pane::-webkit-scrollbar { width: 4px; }
+    .tests-pane::-webkit-scrollbar-track { background: var(--bg); }
+    .tests-pane::-webkit-scrollbar-thumb { background: var(--border); }
+    .section-header { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px; margin-top: 20px; }
+    .section-header:first-child { margin-top: 0; }
+    .card { border: 1px solid var(--border); background: var(--bg2); margin-bottom: 8px; transition: border-color .15s; }
+    .card:hover { border-color: #444; }
+    .card-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .badge { font-size: 9px; font-weight: 700; letter-spacing: .1em; padding: 2px 6px; border: 1px solid; }
+    .badge-get { color: var(--green); border-color: var(--green); }
+    .badge-post { color: var(--amber); border-color: var(--amber); }
+    .badge-error { color: var(--red); border-color: var(--red); }
+    .card-title { font-weight: 700; color: var(--white); font-size: 12px; }
+    .card-body { padding: 10px 12px; }
+    .card-desc { color: var(--text-dim); font-size: 11px; margin-bottom: 8px; line-height: 1.5; }
+    .form-group { margin-bottom: 8px; }
+    .form-label { display: block; font-size: 10px; letter-spacing: .1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
+    textarea, input[type="text"], select { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 11px; padding: 6px 8px; resize: vertical; outline: none; }
+    textarea:focus, input[type="text"]:focus, select:focus { border-color: #555; }
+    select option { background: var(--bg3); }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid var(--border); gap: 8px; }
+    .curl-toggle { font-size: 10px; background: none; border: none; color: var(--text-dim); font-family: inherit; cursor: pointer; }
+    .curl-toggle:hover { color: var(--text); }
+    .run-btn { font-family: inherit; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 5px 14px; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; transition: all .15s; }
+    .run-btn:hover { background: var(--green); color: var(--bg); }
+    .run-btn:disabled { border-color: var(--text-dim); color: var(--text-dim); cursor: not-allowed; }
+    .run-btn.running { border-color: var(--amber); color: var(--amber); animation: shimmer 1s ease-in-out infinite; }
+    @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .curl-box { display: none; background: var(--bg3); border-top: 1px solid var(--border); padding: 8px 12px; font-size: 11px; color: var(--cyan); word-break: break-all; position: relative; }
+    .curl-box.visible { display: block; }
+    .copy-btn { position: absolute; top: 6px; right: 8px; font-family: inherit; font-size: 9px; background: none; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; padding: 2px 6px; }
+    .copy-btn:hover { color: var(--text); border-color: #555; }
+    .response-pane { display: flex; flex-direction: column; overflow: hidden; }
+    .response-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg2); }
+    .response-label { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); }
+    .status-badge { font-size: 18px; font-weight: 700; letter-spacing: .05em; }
+    .status-badge.s2xx { color: var(--green); }
+    .status-badge.s4xx { color: var(--amber); }
+    .status-badge.s5xx { color: var(--red); }
+    .status-badge.idle { color: var(--text-dim); }
+    .timing { font-size: 11px; color: var(--text-dim); margin-left: auto; }
+    .response-body-wrap { flex: 1; overflow-y: auto; }
+    .response-body-wrap::-webkit-scrollbar { width: 4px; }
+    .response-body-wrap::-webkit-scrollbar-track { background: var(--bg); }
+    .response-body-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+    .headers-section { border-bottom: 1px solid var(--border); }
+    .headers-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--text-dim); background: var(--bg2); border: none; width: 100%; font-family: inherit; text-align: left; }
+    .headers-toggle:hover { color: var(--text); }
+    .headers-toggle .arrow { transition: transform .15s; }
+    .headers-toggle.open .arrow { transform: rotate(90deg); }
+    .headers-content { display: none; padding: 8px 16px; background: var(--bg3); }
+    .headers-content.visible { display: block; }
+    .header-row { display: flex; gap: 12px; padding: 2px 0; font-size: 11px; }
+    .header-name { color: var(--cyan); min-width: 160px; }
+    .body-section { padding: 16px; }
+    .body-section pre { font-family: inherit; font-size: 11px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); font-size: 11px; letter-spacing: .1em; gap: 8px; }
+    .empty-state .big { font-size: 32px; color: var(--border); font-weight: 700; }
+    .log-strip { border-top: 1px solid var(--border); background: var(--bg2); height: 120px; overflow-y: auto; padding: 6px 16px; }
+    .log-strip::-webkit-scrollbar { width: 4px; }
+    .log-strip::-webkit-scrollbar-track { background: var(--bg); }
+    .log-strip::-webkit-scrollbar-thumb { background: var(--border); }
+    .log-header { font-size: 9px; letter-spacing: .2em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
+    .log-entry { font-size: 10px; padding: 2px 0; display: flex; gap: 12px; }
+    .log-time { color: var(--text-dim); min-width: 65px; }
+    .log-method { min-width: 45px; }
+    .log-method.get { color: var(--green); }
+    .log-method.post { color: var(--amber); }
+    .log-path { color: var(--text); flex: 1; }
+    .log-status { min-width: 35px; }
+    .log-status.s2xx { color: var(--green); }
+    .log-status.s4xx { color: var(--amber); }
+    .log-status.s5xx { color: var(--red); }
+    .fade-in { animation: fadeIn .2s ease-out; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">WEBSERV — CGI EVAL DASHBOARD<span class="cursor"></span></div>
+  <div class="header-meta"><span class="status-dot"></span>localhost:8080 &nbsp;|&nbsp; 12 scripts &nbsp;|&nbsp; Python3 + Perl</div>
+</header>
+
+<div class="main">
+  <div class="tests-pane">
+
+    <div class="section-header">GET Scripts</div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-get">GET</span><span class="card-title">hello.py</span></div>
+      <div class="card-body">
+        <div class="card-desc">Basic CGI GET — returns method + query string as HTML</div>
+        <div class="form-group"><label class="form-label">Query String</label><input type="text" id="hello-qs" placeholder="name=world&foo=bar"></div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('hello')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/hello.py','hello-qs','hello',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-hello"><button class="copy-btn" onclick="copyCurl('hello')">COPY</button><span id="curl-hello-text">curl http://localhost:8080/cgi-bin/hello.py</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-get">GET</span><span class="card-title">env_dump.py</span></div>
+      <div class="card-body">
+        <div class="card-desc">Dumps all CGI env vars — verifies REQUEST_METHOD, QUERY_STRING, SERVER_PORT etc.</div>
+        <div class="form-group"><label class="form-label">Query String</label><input type="text" id="envdump-py-qs" placeholder="key=value"></div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('envdump-py')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/env_dump.py','envdump-py-qs','envdump-py',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-envdump-py"><button class="copy-btn" onclick="copyCurl('envdump-py')">COPY</button><span id="curl-envdump-py-text">curl http://localhost:8080/cgi-bin/env_dump.py</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-get">GET</span><span class="card-title">env_dump.pl</span></div>
+      <div class="card-body">
+        <div class="card-desc">Same as env_dump.py but Perl — verifies .pl interpreter path works</div>
+        <div class="form-group"><label class="form-label">Query String</label><input type="text" id="envdump-pl-qs" placeholder="key=value"></div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('envdump-pl')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/env_dump.pl','envdump-pl-qs','envdump-pl',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-envdump-pl"><button class="copy-btn" onclick="copyCurl('envdump-pl')">COPY</button><span id="curl-envdump-pl-text">curl http://localhost:8080/cgi-bin/env_dump.pl</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-get">GET</span><span class="card-title">relative_path.py</span></div>
+      <div class="card-body"><div class="card-desc">Reads data.txt using a relative path — proves CGI runs in script directory (chdir test)</div></div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('relpath-py')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/relative_path.py',null,'relpath-py',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-relpath-py"><button class="copy-btn" onclick="copyCurl('relpath-py')">COPY</button><span id="curl-relpath-py-text">curl http://localhost:8080/cgi-bin/relative_path.py</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-get">GET</span><span class="card-title">relative_path.pl</span></div>
+      <div class="card-body"><div class="card-desc">Perl version — reads data.txt relative to script dir</div></div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('relpath-pl')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/relative_path.pl',null,'relpath-pl',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-relpath-pl"><button class="copy-btn" onclick="copyCurl('relpath-pl')">COPY</button><span id="curl-relpath-pl-text">curl http://localhost:8080/cgi-bin/relative_path.pl</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-get">GET</span><span class="card-title">info.pl</span></div>
+      <div class="card-body">
+        <div class="card-desc">Perl info script — GET mode shows method + query string</div>
+        <div class="form-group"><label class="form-label">Query String</label><input type="text" id="info-pl-qs" placeholder="key=value"></div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('info-pl')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/info.pl','info-pl-qs','info-pl',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-info-pl"><button class="copy-btn" onclick="copyCurl('info-pl')">COPY</button><span id="curl-info-pl-text">curl http://localhost:8080/cgi-bin/info.pl</span></div>
+    </div>
+
+    <div class="section-header">POST Scripts</div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-post">POST</span><span class="card-title">echo.py</span></div>
+      <div class="card-body">
+        <div class="card-desc">Echoes POST body as JSON — verifies stdin pipe delivery</div>
+        <div class="form-group"><label class="form-label">Body</label><textarea id="echo-body" rows="3" placeholder='{"message":"hello"}'></textarea></div>
+        <div class="form-group"><label class="form-label">Content-Type</label>
+          <select id="echo-ct"><option value="application/json">application/json</option><option value="text/plain">text/plain</option><option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option></select>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('echo')">$ curl</button>
+        <button class="run-btn" onclick="runPost('/cgi-bin/echo.py','echo-body','echo-ct','echo',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-echo"><button class="copy-btn" onclick="copyCurl('echo')">COPY</button><span id="curl-echo-text">curl -X POST http://localhost:8080/cgi-bin/echo.py -d '{"msg":"hello"}'</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-post">POST</span><span class="card-title">form_post.py</span></div>
+      <div class="card-body">
+        <div class="card-desc">Parses URL-encoded POST body, displays field/value table</div>
+        <div class="form-group"><label class="form-label">Form Body (URL-encoded)</label><textarea id="form-body" rows="2" placeholder="name=Alice&age=30&city=KL"></textarea></div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('form')">$ curl</button>
+        <button class="run-btn" onclick="runPost('/cgi-bin/form_post.py','form-body',null,'form',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-form"><button class="copy-btn" onclick="copyCurl('form')">COPY</button><span id="curl-form-text">curl -X POST http://localhost:8080/cgi-bin/form_post.py -d 'name=Alice&age=30'</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-post">POST</span><span class="card-title">info.pl (POST)</span></div>
+      <div class="card-body">
+        <div class="card-desc">Perl POST — reads body from stdin, displays method + content</div>
+        <div class="form-group"><label class="form-label">Body</label><textarea id="info-pl-post-body" rows="2" placeholder="hello from perl POST"></textarea></div>
+        <div class="form-group"><label class="form-label">Content-Type</label>
+          <select id="info-pl-post-ct"><option value="text/plain">text/plain</option><option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option></select>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('info-pl-post')">$ curl</button>
+        <button class="run-btn" onclick="runPost('/cgi-bin/info.pl','info-pl-post-body','info-pl-post-ct','info-pl-post',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-info-pl-post"><button class="copy-btn" onclick="copyCurl('info-pl-post')">COPY</button><span id="curl-info-pl-post-text">curl -X POST http://localhost:8080/cgi-bin/info.pl -d 'hello perl'</span></div>
+    </div>
+
+    <div class="section-header">Error Handling</div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-error">500</span><span class="card-title">crash.py</span></div>
+      <div class="card-body"><div class="card-desc">Raises RuntimeError immediately — server must return 500 and stay up</div></div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('crash-py')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/crash.py',null,'crash-py',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-crash-py"><button class="copy-btn" onclick="copyCurl('crash-py')">COPY</button><span id="curl-crash-py-text">curl -v http://localhost:8080/cgi-bin/crash.py</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-error">500</span><span class="card-title">crash.pl</span></div>
+      <div class="card-body"><div class="card-desc">Calls die() immediately — server must return 500 and stay up</div></div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('crash-pl')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/crash.pl',null,'crash-pl',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-crash-pl"><button class="copy-btn" onclick="copyCurl('crash-pl')">COPY</button><span id="curl-crash-pl-text">curl -v http://localhost:8080/cgi-bin/crash.pl</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-error">504</span><span class="card-title">infinite_loop.py</span></div>
+      <div class="card-body"><div class="card-desc">Loops forever — server kills after 10s and returns 504 Gateway Timeout</div></div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('loop-py')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/infinite_loop.py',null,'loop-py',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-loop-py"><button class="copy-btn" onclick="copyCurl('loop-py')">COPY</button><span id="curl-loop-py-text">curl http://localhost:8080/cgi-bin/infinite_loop.py</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-error">504</span><span class="card-title">infinite_loop.pl</span></div>
+      <div class="card-body"><div class="card-desc">Perl infinite loop — same 504 timeout test for .pl interpreter</div></div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('loop-pl')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/infinite_loop.pl',null,'loop-pl',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-loop-pl"><button class="copy-btn" onclick="copyCurl('loop-pl')">COPY</button><span id="curl-loop-pl-text">curl http://localhost:8080/cgi-bin/infinite_loop.pl</span></div>
+    </div>
+
+  </div>
+
+  <div class="response-pane">
+    <div class="response-header">
+      <span class="response-label">RESPONSE</span>
+      <span class="status-badge idle" id="statusBadge">—</span>
+      <span class="timing" id="timingBadge"></span>
+    </div>
+    <div class="response-body-wrap" id="responseBodyWrap">
+      <div class="empty-state"><div class="big">&gt;_</div><div>Run a test to see the response</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="log-strip">
+  <div class="log-header">REQUEST LOG</div>
+  <div id="logEntries"></div>
+</div>
+
+<script>
+  function toggleCurl(id) {
+    document.getElementById('curl-' + id).classList.toggle('visible');
+  }
+  function copyCurl(id) {
+    var txt = document.getElementById('curl-' + id + '-text').textContent;
+    navigator.clipboard.writeText(txt).catch(function(){});
+    var btn = document.querySelector('#curl-' + id + ' .copy-btn');
+    btn.textContent = 'COPIED';
+    setTimeout(function(){ btn.textContent = 'COPY'; }, 1500);
+  }
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function getTime() { return new Date().toTimeString().slice(0,8); }
+  function addLog(method, path, status, ms) {
+    var entries = document.getElementById('logEntries');
+    var mClass = method.toLowerCase();
+    var sClass = status >= 200 && status < 300 ? 's2xx' : status >= 400 && status < 500 ? 's4xx' : status >= 500 ? 's5xx' : 'err';
+    var row = document.createElement('div');
+    row.className = 'log-entry fade-in';
+    row.innerHTML = '<span class="log-time">' + getTime() + '</span>' +
+      '<span class="log-method ' + mClass + '">' + method + '</span>' +
+      '<span class="log-path">' + escHtml(path) + '</span>' +
+      '<span class="log-status ' + sClass + '">' + (status || 'ERR') + '</span>' +
+      '<span class="log-ms">' + (ms ? ms + 'ms' : '—') + '</span>';
+    entries.insertBefore(row, entries.firstChild);
+    while (entries.children.length > 50) entries.removeChild(entries.lastChild);
+  }
+  function setRunning(btn) { btn.disabled = true; btn.classList.add('running'); btn.textContent = '... WAIT'; }
+  function resetBtn(btn) { btn.disabled = false; btn.classList.remove('running'); btn.textContent = '▶ RUN'; }
+  function showResponse(status, headers, body, ms) {
+    var badge = document.getElementById('statusBadge');
+    var sClass = status >= 200 && status < 300 ? 's2xx' : status >= 400 && status < 500 ? 's4xx' : 's5xx';
+    badge.className = 'status-badge ' + sClass; badge.textContent = status;
+    document.getElementById('timingBadge').textContent = ms ? ms + 'ms' : '';
+    var headerHtml = '';
+    headers.forEach(function(h) {
+      headerHtml += '<div class="header-row"><span class="header-name">' + escHtml(h[0]) + '</span><span>' + escHtml(h[1]) + '</span></div>';
+    });
+    var bodyHtml = escHtml(body);
+    var ct = headers.find(function(h){ return h[0].toLowerCase() === 'content-type'; });
+    if (ct && ct[1].indexOf('application/json') !== -1) {
+      try { bodyHtml = escHtml(JSON.stringify(JSON.parse(body), null, 2)); } catch(e){}
+    }
+    document.getElementById('responseBodyWrap').innerHTML =
+      '<div class="headers-section"><button class="headers-toggle" onclick="toggleHeaders(this)"><span class="arrow">&#9654;</span> HEADERS (' + headers.length + ')</button>' +
+      '<div class="headers-content" id="headersContent">' + headerHtml + '</div></div>' +
+      '<div class="body-section fade-in"><pre>' + bodyHtml + '</pre></div>';
+  }
+  function toggleHeaders(btn) {
+    btn.classList.toggle('open');
+    document.getElementById('headersContent').classList.toggle('visible');
+  }
+  function showError(msg) {
+    document.getElementById('statusBadge').className = 'status-badge s5xx';
+    document.getElementById('statusBadge').textContent = 'ERR';
+    document.getElementById('timingBadge').textContent = '';
+    document.getElementById('responseBodyWrap').innerHTML =
+      '<div class="body-section fade-in"><pre style="color:var(--red)">' + escHtml(msg) + '</pre></div>';
+  }
+  function updateCurlGet(id, path, qs) {
+    var el = document.getElementById('curl-' + id + '-text');
+    if (el) el.textContent = 'curl -v http://localhost:8080' + path + (qs ? '?' + qs : '');
+  }
+  function updateCurlPost(id, path, body, ct) {
+    var el = document.getElementById('curl-' + id + '-text');
+    if (el) el.textContent = 'curl -v -X POST http://localhost:8080' + path + ' -H "Content-Type: ' + ct + '" -d \'' + body + '\'';
+  }
+  function runGet(path, qsId, cardId, ev) {
+    var btn = ev.target;
+    var qs = qsId ? document.getElementById(qsId).value.trim() : '';
+    var url = path + (qs ? '?' + qs : '');
+    updateCurlGet(cardId, path, qs);
+    setRunning(btn);
+    var t0 = performance.now();
+    fetch(url).then(function(resp) {
+      var ms = Math.round(performance.now() - t0);
+      resp.text().then(function(body) {
+        showResponse(resp.status, Array.from(resp.headers.entries()), body, ms);
+        addLog('GET', url, resp.status, ms);
+      });
+    }).catch(function(e) {
+      var ms = Math.round(performance.now() - t0);
+      showError('Fetch failed: ' + e.message + '\n\nServer may be down or request timed out (infinite loop scripts take ~10s).');
+      addLog('GET', url, 0, ms);
+    }).finally(function(){ resetBtn(btn); });
+  }
+  function runPost(path, bodyId, ctId, cardId, ev) {
+    var btn = ev.target;
+    var body = bodyId ? document.getElementById(bodyId).value : '';
+    var ct = ctId ? document.getElementById(ctId).value : 'application/x-www-form-urlencoded';
+    updateCurlPost(cardId, path, body, ct);
+    setRunning(btn);
+    var t0 = performance.now();
+    fetch(path, { method: 'POST', headers: { 'Content-Type': ct }, body: body })
+      .then(function(resp) {
+        var ms = Math.round(performance.now() - t0);
+        resp.text().then(function(b) {
+          showResponse(resp.status, Array.from(resp.headers.entries()), b, ms);
+          addLog('POST', path, resp.status, ms);
+        });
+      }).catch(function(e) {
+        var ms = Math.round(performance.now() - t0);
+        showError('Fetch failed: ' + e.message);
+        addLog('POST', path, 0, ms);
+      }).finally(function(){ resetBtn(btn); });
+  }
+</script>
+</body>
+</html>

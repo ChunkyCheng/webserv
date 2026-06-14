@@ -23,6 +23,7 @@ int	main(int argc, char *argv[])
 			WebServer	webserv(argv[1]);
 		
 			signal(SIGINT, &sigint);
+			signal(SIGPIPE, SIG_IGN);
 			webserv.runServerLoop();
 		}
 		else
@@ -30,6 +31,7 @@ int	main(int argc, char *argv[])
 			WebServer	webserv;
 			
 			signal(SIGINT, &sigint);
+			signal(SIGPIPE, SIG_IGN);
 			webserv.runServerLoop();
 		}
 	}

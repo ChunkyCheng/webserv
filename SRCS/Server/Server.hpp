@@ -4,6 +4,7 @@
 # include "socket.h"
 # include "ServerSocket.hpp"
 # include "Location.hpp"
+# include <ctime>
 
 class	WebServer;
 class	Epoll;
@@ -24,7 +25,7 @@ class	Server
 
 		const std::vector<Location>&	getLocations(void) const;
 		const std::vector<std::string>&	getSocketAddr(void) const;
-		void		checkCgiTimeouts(time_t now, int timeout_secs);
+		void							checkCgiTimeouts(time_t now, int timeout_secs);
 	
 	private:
 		WebServer&						_webserver;

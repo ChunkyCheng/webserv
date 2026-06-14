@@ -1,6 +1,9 @@
 #include "WebServer.hpp"
 #include "ConfigParser.hpp"
 #include "Server.hpp"
+#include <ctime>
+
+static const int CGI_TIMEOUT_SECS = 10;
 
 bool	WebServer::_runServer = false;
 
@@ -54,7 +57,15 @@ void	WebServer::runServerLoop(void)
 	while (WebServer::_runServer)
 	{
 		_epoll.runEvents();
+		_checkCgiTimeouts();
 	}
+}
+
+void	WebServer::_checkCgiTimeouts(void)
+{
+	time_t now = time(NULL);
+	for (size_t i = 0; i < _servers.size(); ++i)
+		_servers[i]->checkCgiTimeouts(now, CGI_TIMEOUT_SECS);
 }
 
 void	WebServer::stopServerLoop(void)

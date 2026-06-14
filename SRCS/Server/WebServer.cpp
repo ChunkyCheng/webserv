@@ -40,11 +40,11 @@ void	WebServer::_initServer(const std::string config_path)
 	_servers = parser.createServers(*this);
 	while (_servers.size())
 	{
-		std::cout << *_servers[i];
+		std::cerr << *_servers[i];
 		++i;
 		if (i == _servers.size())
 			break;
-		std::cout << "\n=====================================\n";
+		std::cerr << "\n=====================================\n";
 	}
 	std::cout << std::endl;
 }

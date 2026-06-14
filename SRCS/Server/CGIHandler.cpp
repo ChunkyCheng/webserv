@@ -144,8 +144,7 @@ void CGIHandler::onStdinReady (void) {
 			_stdin_fd = -1;
 		}
 	}
-	/* EAGAIN and EWOULDBLOCK are not real errors */
-	else if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+	else if (n == -1) {
 		_epoll.removeSocket(*_stdin_pipe);
 		close(_stdin_fd);
 		_stdin_fd = -1;

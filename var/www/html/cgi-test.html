@@ -112,7 +112,7 @@
 
 <header>
   <div class="header-title">WEBSERV — CGI EVAL DASHBOARD<span class="cursor"></span></div>
-  <div class="header-meta"><span class="status-dot"></span>localhost:8080 &nbsp;|&nbsp; 12 scripts &nbsp;|&nbsp; Python3 + Perl</div>
+  <div class="header-meta"><span class="status-dot"></span>localhost:8080 &nbsp;|&nbsp; 13 scripts &nbsp;|&nbsp; Python3 + Perl</div>
 </header>
 
 <div class="main">
@@ -237,6 +237,20 @@
         <button class="run-btn" onclick="runPost('/cgi-bin/info.pl','info-pl-post-body','info-pl-post-ct','info-pl-post',event)">&#9654; RUN</button>
       </div>
       <div class="curl-box" id="curl-info-pl-post"><button class="copy-btn" onclick="copyCurl('info-pl-post')">COPY</button><span id="curl-info-pl-post-text">curl -X POST http://localhost:8080/cgi-bin/info.pl -d 'hello perl'</span></div>
+    </div>
+
+    <div class="section-header">Cookies &amp; Sessions</div>
+
+    <div class="card">
+      <div class="card-header"><span class="badge badge-get">GET</span><span class="card-title">visit_counter.py</span></div>
+      <div class="card-body">
+        <div class="card-desc">Cookie-based visit counter — opaque session_id cookie, count stored server-side in sessions/&lt;id&gt;.txt. Click RUN multiple times; browser sends cookie automatically so counter increments. Open in a private tab to start fresh.</div>
+      </div>
+      <div class="card-footer">
+        <button class="curl-toggle" onclick="toggleCurl('visit-counter')">$ curl</button>
+        <button class="run-btn" onclick="runGet('/cgi-bin/visit_counter.py',null,'visit-counter',event)">&#9654; RUN</button>
+      </div>
+      <div class="curl-box" id="curl-visit-counter"><button class="copy-btn" onclick="copyCurl('visit-counter')">COPY</button><span id="curl-visit-counter-text">curl -v http://localhost:8080/cgi-bin/visit_counter.py</span></div>
     </div>
 
     <div class="section-header">Error Handling</div>

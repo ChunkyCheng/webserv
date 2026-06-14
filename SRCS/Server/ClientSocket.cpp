@@ -21,7 +21,7 @@ void	ClientSocket::handleEvent(int events)
 {
 	if (events & EPOLLOUT)
 		_client.sendMessage();
-	if (events & EPOLLIN)
+	else if (events & EPOLLIN)
 		_client.recvMessage();
 }
 

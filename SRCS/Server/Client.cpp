@@ -65,7 +65,10 @@ void	Client::sendMessage(void)
 	}
 	len = send(_socket.getFd(), _response_buff.c_str(), _response_buff.size(), 0);
 	if (len == -1)
+	{
 		std::cerr << strerror(errno) << std::endl;
+		_server.deleteClient(_socket.getFd());
+	}
 	else
 		_response_buff.erase(0, len);
 }

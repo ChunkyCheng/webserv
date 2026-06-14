@@ -1,4 +1,5 @@
 #include "RequestHandler.hpp"
+#include "Epoll.hpp"
 #include <cstdlib>
 #include <cstdio>
 #include <unistd.h>
@@ -10,10 +11,11 @@
 #include <ctime>
 #include <cerrno>
 #include <cstring>
+#include <climits>
 
 
 RequestHandler::RequestHandler(Server& server,
-std::string& req_buff, std::string& res_buff)
+std::string& req_buff, std::string& res_buff, Epoll& epoll, ISocket& client_socket)
 	: _server(server),
 	_request_buff(req_buff),
 	_response_buff(res_buff),
@@ -23,7 +25,10 @@ std::string& req_buff, std::string& res_buff)
 	_handler_error_code(NONE),
 	_location(NULL),
 	_should_close_connection(false),
-	_is_cgi(false)
+	_is_cgi(false),
+	_epoll(epoll),
+	_client_socket(client_socket),
+	_cgi_handler(NULL)
 {
 }
 
@@ -106,6 +111,11 @@ void	RequestHandler::buildResponseData(void)
 	evaluateConnectionState(status);
 	if (status == NONE)
 	{
+		if (_is_cgi)
+		{
+			_spawnCgi();
+			return ;
+		}
 		status = executeMethod();
 	}
 	if (status != NONE)
@@ -133,6 +143,35 @@ void	RequestHandler::buildResponseData(void)
 
 void	RequestHandler::continueBuildResponse(void)
 {
+	if (_res_state == RES_CGI_BODY)
+	{
+		if (_cgi_handler && _cgi_handler->hasError())
+		{
+			delete _cgi_handler;
+			_cgi_handler = NULL;
+			buildErrorOrRedirectResponse(INTERNAL_SERVER_ERROR);
+			assembleFinalBuffer();
+			_res_state = RES_FINISHED;
+		}
+		else if (_cgi_handler && _cgi_handler->isComplete())
+		{
+			if (_cgi_handler->getOutput().empty())
+			{
+				delete _cgi_handler;
+				_cgi_handler = NULL;
+				buildErrorOrRedirectResponse(BAD_GATEWAY);
+			}
+			else
+			{
+				_parseCgiOutput(_cgi_handler->getOutput());
+				delete _cgi_handler;
+				_cgi_handler = NULL;
+			}
+			assembleFinalBuffer();
+			_res_state = RES_FINISHED;
+		}
+		return ;
+	}
 	if (_res_state == RES_HEADERS)
 	{
 		_res_state = RES_BODY;
@@ -841,6 +880,11 @@ void	RequestHandler::reset(void)
 	}
 	_file_stream.clear();
 	_redirect_target.clear();
+	if (_cgi_handler)
+	{
+		delete _cgi_handler;
+		_cgi_handler = NULL;
+	}
 }
 
 bool	RequestHandler::getShouldCloseConnection(void) const
@@ -889,3 +933,203 @@ std::string RequestHandler::getPathOnly(const std::string& uri)
 	std::string path = (pos == std::string::npos) ? uri : uri.substr(0, pos);
 	return (normalizePath(path));
 }
+
+std::vector<std::string> RequestHandler::_buildCgiEnv(void)
+{
+	std::vector<std::string> env;
+	std::string root = _location->getRoot();
+
+	/* Split path and query string */
+	std::string path = _httpRequest.getPath();
+	std::string query_string;
+	size_t qmark_pos = path.find('?');
+	if (qmark_pos != std::string::npos) {
+		query_string = path.substr(qmark_pos + 1);
+		path = path.substr(0, qmark_pos);
+	}
+
+	/* Split path and path info*/
+	std::string path_info;
+	std::string script_path = getNormalPagePath();
+	size_t ext_dot = script_path.find_last_of('.');
+	if (ext_dot != std::string::npos) {
+		std::string ext = script_path.substr(ext_dot);
+
+		size_t ext_pos = path.find(ext);
+		if (ext_pos != std::string::npos) {
+			size_t split_pos = ext_pos + ext.length();
+			path = path.substr(0, split_pos);
+			path_info = path.substr(split_pos);
+		}
+	}
+
+	std::string path_translated;
+	if (!path_info.empty()) {
+		path_translated = root + path_info;
+	}
+
+	std::string server_port;
+	std::vector<std::string> addrs = _server.getSocketAddr();
+	if (!addrs.empty()) {
+		size_t colon = addrs[0].find_last_of(':');
+		if (colon != std::string::npos) {
+			server_port = addrs[0].substr(colon + 1);
+		}
+	}
+
+	env.push_back("AUTH_TYPE=");
+	env.push_back("REMOTE_USER=");
+	env.push_back("REMOTE_HOST=localhost");
+	env.push_back("REMOTE_ADDR=127.0.0.1");
+	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	env.push_back("SERVER_SOFTWARE=Webserv/1.0");
+	env.push_back("REQUEST_METHOD=" + _httpRequest.getMethod());
+	env.push_back("QUERY_STRING=" + query_string);
+	env.push_back("SCRIPT_NAME=" + path);
+	env.push_back("SCRIPT_FILENAME=" + getNormalPagePath());
+	env.push_back("PATH_INFO=" + path_info);
+	env.push_back("PATH_TRANSLATED=" + path_translated);
+	env.push_back("SERVER_PROTOCOL=" + _httpRequest.getVersion());
+	env.push_back("SERVER_NAME=localhost");
+	env.push_back("SERVER_PORT=" + server_port);
+	env.push_back("REDIRECT_STATUS=200");
+
+	std::map<std::string, std::string> headers = _httpRequest.getHeaders();
+	std::map<std::string, std::string>::const_iterator it;
+	it = headers.find("content-type");
+	env.push_back("CONTENT_TYPE=" + (it != headers.end() ? it->second : ""));
+
+	it = headers.find("content-length");
+	env.push_back("CONTENT_LENGTH=" + (it != headers.end() ? it->second : ""));
+
+	for (it = headers.begin(); it != headers.end(); ++it) {
+		std::string key = "HTTP_" + it->first;
+		std::replace(key.begin(), key.end(), '-', '_');
+		std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+		env.push_back(key + "=" + it->second);
+	}
+
+	return env;
+}
+
+void RequestHandler::_spawnCgi(void)
+{
+	std::string script_path = getNormalPagePath();
+
+	size_t ext_dot = script_path.find_last_of('.');
+	std::string ext = script_path.substr(ext_dot);
+	std::string interpreter = _location->getCgiMap().find(ext)->second;
+
+	size_t last_slash = script_path.find_last_of('/');
+	std::string working_dir = script_path.substr(0, last_slash);
+	std::string script_name = script_path.substr(last_slash + 1);
+
+	std::string exec_path = "./" + script_name;
+
+	std::vector<std::string> env = _buildCgiEnv();
+
+	_cgi_handler = new CGIHandler(interpreter, exec_path, working_dir,
+								_httpRequest.getBody(), env, _epoll, _client_socket);
+
+	if (_cgi_handler->hasError()) {
+		delete _cgi_handler;
+		_cgi_handler = NULL;
+		buildErrorOrRedirectResponse(INTERNAL_SERVER_ERROR);
+		assembleFinalBuffer();
+		_res_state = RES_FINISHED;
+		return;
+	}
+
+	_res_state = RES_CGI_BODY;
+}
+
+void RequestHandler::_parseCgiOutput(const std::string& cgi_output)
+{
+	size_t sep = cgi_output.find("\r\n\r\n");
+	size_t sep_len = 4;
+	if (sep == std::string::npos)
+	{
+		sep = cgi_output.find("\n\n");
+		sep_len = 2;
+	}
+
+	std::string header_block;
+	std::string body;
+	if (sep == std::string::npos) {
+		body = cgi_output;
+	} else {
+		header_block = cgi_output.substr(0, sep);
+		body = cgi_output.substr(sep + sep_len);
+	}
+
+	HttpStatus cgi_status = OK;
+	bool has_content_type = false;
+
+	std::stringstream ss(header_block);
+	std::string line;
+	while (std::getline(ss, line)) {
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
+		if (line.empty())
+			continue;
+
+		size_t colon = line.find(':');
+		if (colon == std::string::npos)
+			continue;
+
+		std::string key = line.substr(0, colon);
+		std::string value = line.substr(colon + 1);
+		size_t start = value.find_first_not_of(" \t");
+		if (start != std::string::npos)
+			value = value.substr(start);
+
+		std::string lower_key = key;
+		std::transform(lower_key.begin(), lower_key.end(), lower_key.begin(), ::tolower);
+
+		if (lower_key == "status") {
+			int code = std::atoi(value.c_str());
+			if (code >= 100 && code < 600)
+				cgi_status = static_cast<HttpStatus>(code);
+		} else {
+			_httpResponse.addHeader(key, value);
+			if (lower_key == "content-type")
+				has_content_type = true;
+		}
+	}
+
+	_httpResponse.setStatusCode(cgi_status);
+	if (!has_content_type) {
+		_httpResponse.addHeader("Content-Type", "text/html");
+	}
+	_httpResponse.setBody(body);
+
+	std::ostringstream oss;
+	oss << body.size();
+	_httpResponse.overwriteHeader("Content-Length", oss.str());
+}
+
+bool RequestHandler::isCgiPending(void) const
+{
+	return _cgi_handler != NULL;
+}
+
+time_t RequestHandler::getCgiStartTime(void) const
+{
+	if (!_cgi_handler)
+		return (0);
+	return _cgi_handler->getStartTime();
+}
+
+void RequestHandler::abortCgi(void)
+{
+	if (!_cgi_handler)
+		return;
+	_cgi_handler->killProcess();
+	delete _cgi_handler;
+	_cgi_handler = NULL;
+	buildErrorOrRedirectResponse(GATEWAY_TIMEOUT);
+	assembleFinalBuffer();
+	_res_state = RES_FINISHED;
+	_epoll.modAddSendEvent(_client_socket);
+}
+

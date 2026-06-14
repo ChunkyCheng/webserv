@@ -51,6 +51,20 @@ void	Epoll::modRemoveSendEvent(ISocket& socket)
 	epoll_ctl(_fd, EPOLL_CTL_MOD, socket.getFd(), &epoll_event);
 }
 
+void	Epoll::addSocketWithEvent(ISocket& socket, int events)
+{
+	struct epoll_event	epoll_event;
+
+	epoll_event.events = events;
+	epoll_event.data.ptr = &socket;
+	epoll_ctl(_fd, EPOLL_CTL_ADD, socket.getFd(), &epoll_event);
+}
+
+void	Epoll::removeSocket(ISocket& socket)
+{
+	epoll_ctl(_fd, EPOLL_CTL_DEL, socket.getFd(), NULL);
+}
+
 void	Epoll::runEvents(void)
 {
 	struct epoll_event	events[_MAX_EVENTS];

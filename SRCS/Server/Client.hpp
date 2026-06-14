@@ -21,6 +21,7 @@ class	Client
 		ClientSocket&	getSocket(void);
 		void			recvMessage(void);
 		void			sendMessage(void);
+		void			checkCgiTimeout(time_t now, int timeout_secs);
 
 	private:
 		ClientSocket	_socket;

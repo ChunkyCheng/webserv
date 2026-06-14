@@ -4,7 +4,7 @@
 
 Client::Client(int socket_fd, Server& server, Epoll& epoll)
 	:_socket(*this, socket_fd), _server(server), _epoll(epoll),
-	 _requestHandler(server, _request_buff, _response_buff)
+	 _requestHandler(server, _request_buff, _response_buff, epoll, _socket)
 {
 }
 
@@ -37,7 +37,8 @@ void	Client::recvMessage(void)
 		if (_requestHandler.checkRequestComplete())
 		{
 			_requestHandler.buildResponseData();
-			_epoll.modAddSendEvent(_socket);
+			if (!_requestHandler.isCgiPending())
+				_epoll.modAddSendEvent(_socket);
 		}
 	}
 }
@@ -67,4 +68,13 @@ void	Client::sendMessage(void)
 		std::cerr << strerror(errno) << std::endl;
 	else
 		_response_buff.erase(0, len);
+}
+
+void	Client::checkCgiTimeout(time_t now, int timeout_secs)
+{
+	if (_requestHandler.isCgiPending() && (now - _requestHandler.getCgiStartTime()) >= timeout_secs)
+	{
+		std::cerr << "CGI process timed out for client " << std::endl;
+		_requestHandler.abortCgi();
+	}
 }

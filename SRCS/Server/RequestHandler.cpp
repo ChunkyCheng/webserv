@@ -1016,31 +1016,19 @@ void RequestHandler::_spawnCgi(void)
 {
 	std::string script_path = getNormalPagePath();
 
-	/* Resolve to absolute so chdir in child doesn't break relative argv[1] */
-	char resolved[PATH_MAX];
-	if (realpath(script_path.c_str(), resolved))
-	{
-		script_path = resolved;
-	}
-	else
-	{
-		char cwd[PATH_MAX];
-		if (getcwd(cwd, sizeof(cwd)))
-		{
-			if (!script_path.empty() && script_path[0] != '/')
-				script_path = std::string(cwd) + "/" + script_path;
-		}
-	}
-
 	size_t ext_dot = script_path.find_last_of('.');
 	std::string ext = script_path.substr(ext_dot);
 	std::string interpreter = _location->getCgiMap().find(ext)->second;
 
-	std::string working_dir = script_path.substr(0, script_path.find_last_of('/'));
+	size_t last_slash = script_path.find_last_of('/');
+	std::string working_dir = script_path.substr(0, last_slash);
+	std::string script_name = script_path.substr(last_slash + 1);
+
+	std::string exec_path = "./" + script_name;
 
 	std::vector<std::string> env = _buildCgiEnv();
 
-	_cgi_handler = new CGIHandler(interpreter, script_path, working_dir,
+	_cgi_handler = new CGIHandler(interpreter, exec_path, working_dir,
 								_httpRequest.getBody(), env, _epoll, _client_socket);
 
 	if (_cgi_handler->hasError()) {

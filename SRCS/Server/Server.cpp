@@ -55,7 +55,9 @@ void	Server::createClient(int listening_fd)
 		return ;
 	}
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
-	std::cout << "Client connected on socket " << listening_fd << std::endl;
+	std::cout << "Client with fd " << client_fd
+			  << " connected on socket with fd " << listening_fd
+			  << std::endl;
 	newClient = new Client(client_fd, *this, _epoll);
 	_epoll.addSocketToPoll(newClient->getSocket());
 	_clients[client_fd] = newClient;
@@ -63,6 +65,8 @@ void	Server::createClient(int listening_fd)
 
 void	Server::deleteClient(int client_fd)
 {
+	std::cerr << "deleting client with socket fd " << client_fd << std::endl;
+	_epoll.removeSocket(_clients[client_fd]->getSocket());
 	delete _clients[client_fd];
 	_clients.erase(client_fd);
 }

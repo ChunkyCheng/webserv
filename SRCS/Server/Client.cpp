@@ -32,7 +32,7 @@ void	Client::recvMessage(void)
 	}
 	else
 	{
-		_request_buff += std::string(raw, len);
+		_request_buff.append(raw, len);
 		_requestHandler.processReqData();
 		if (_requestHandler.checkRequestComplete())
 		{

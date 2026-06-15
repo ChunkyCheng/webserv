@@ -34,6 +34,11 @@ std::string& req_buff, std::string& res_buff, Epoll& epoll, ISocket& client_sock
 
 RequestHandler::~RequestHandler(void)
 {
+	if (_cgi_handler)
+	{
+		delete _cgi_handler;
+		_cgi_handler = NULL;
+	}
 }
 
 bool	RequestHandler::checkRequestComplete(void) const

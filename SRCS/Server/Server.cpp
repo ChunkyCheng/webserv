@@ -55,7 +55,7 @@ void	Server::createClient(int listening_fd)
 		return ;
 	}
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
-	std::cout << "Client with fd " << client_fd
+	std::cout << "\nClient with fd " << client_fd
 			  << " connected on socket with fd " << listening_fd
 			  << std::endl;
 	newClient = new Client(client_fd, *this, _epoll);

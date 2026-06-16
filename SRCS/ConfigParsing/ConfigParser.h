@@ -16,6 +16,7 @@
 
 # define CLIENT_MAX_BODY_RULES	(ADirective::s_rules){ALL_BLOCK, 2, 2, false}
 # define ROOT_RULES				(ADirective::s_rules){ALL_BLOCK, 2, 2, false}
+# define ALIAS_RULES			(ADirective::s_rules){ALL_BLOCK, 2, 2, false}
 # define ERROR_PAGE_RULES		(ADirective::s_rules){ALL_BLOCK, 3, INT_MAX, true}
 # define UPLOAD_RULES			(ADirective::s_rules){ALL_BLOCK, 2, 2, false}
 # define UPLOAD_STORE_RULES		(ADirective::s_rules){ALL_BLOCK, 2, 2, false}

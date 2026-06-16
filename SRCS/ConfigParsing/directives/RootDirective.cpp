@@ -12,5 +12,6 @@ RootDirective::~RootDirective(void)
 
 void	RootDirective::setConfig(Config& config) const
 {
+	config.alias = "";
 	config.root = _argv[1].value;
 }

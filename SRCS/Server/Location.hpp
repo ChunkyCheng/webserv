@@ -25,6 +25,7 @@ class	Location
 		const bool&									isDelete(void) const;
 		const unsigned long long&					getClientMaxBodySize(void) const;
 		const std::string&							getRoot(void) const;
+		const std::string&							getAlias(void) const;
 		const std::vector<std::string>&				getIndex(void) const;
 		const bool&									isAutoindex(void) const;
 		const std::map<int, std::string>&			getErrorPages(void) const;

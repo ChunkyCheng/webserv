@@ -12,6 +12,7 @@ DIRECTIVE_DIR	=	$(PARSE_DIR)/directives
 DIRECTIVE_FILES	=	ServerDirective.cpp				LocationDirective.cpp		\
 					ErrorPageDirective.cpp			ListenDirective.cpp			\
 					MethodsDirective.cpp			RootDirective.cpp			\
+					AliasDirective.cpp											\
 					IndexDirective.cpp				AutoindexDirective.cpp		\
 					ClientMaxDirective.cpp			ReturnDirective.cpp			\
 					UploadDirective.cpp				UploadStoreDirective.cpp	\

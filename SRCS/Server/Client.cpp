@@ -51,6 +51,11 @@ void	Client::sendMessage(void)
 		_requestHandler.continueBuildResponse();
 	if (_requestHandler.checkResponseComplete() && _response_buff.size() == 0)
 	{
+		if (_requestHandler.getShouldCloseConnection())
+		{
+			_server.deleteClient(_socket.getFd());
+			return ;
+		}
 		_requestHandler.reset();
 		if (!_request_buff.empty())
 		{

@@ -64,9 +64,10 @@ void	Client::sendMessage(void)
 		_epoll.modRemoveSendEvent(_socket);
 	}
 	len = send(_socket.getFd(), _response_buff.c_str(), _response_buff.size(), 0);
-	if (len == -1)
+	if (len <= 0)
 	{
-		std::cerr << strerror(errno) << std::endl;
+		if (len == -1)
+			std::cerr << strerror(errno) << std::endl;
 		_server.deleteClient(_socket.getFd());
 	}
 	else

@@ -160,6 +160,8 @@ void CGIHandler::onStdoutReady(void) {
 	ssize_t n = read(_stdout_fd, buffer, sizeof(buffer));
 	if (n > 0)
 		_cgi_output.append(buffer, n);
+	else if (n == -1)
+		std::cerr << strerror(errno) << std::endl;
 }
 
 void CGIHandler::onStdoutHup(void) {

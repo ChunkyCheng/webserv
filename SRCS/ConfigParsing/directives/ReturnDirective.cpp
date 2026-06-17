@@ -21,7 +21,8 @@ void	ReturnDirective::parse(t_tokens& tokens, const std::string& config_path)
 			throw (ConfigExcept(ConfigExcept::INVALID_VAL, _argv[1], _type, config_path));
 	}
 	_code = std::atoi(_argv[1].value.c_str());
-	_target = _argv[2].value;
+	if (_argv.size() == 3)
+		_target = _argv[2].value;
 }
 
 void	ReturnDirective::setConfig(Config& config) const

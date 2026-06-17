@@ -16,6 +16,7 @@ Config::Config(const Config& other)
 	:return_info(other.return_info),
 	 client_max_body_size(other.client_max_body_size),
 	 root(other.root),
+	 alias(other.alias),
 	 index(other.index),
 	 autoindex(other.autoindex),
 	 error_pages(other.error_pages),
@@ -38,6 +39,7 @@ Config&	Config::operator=(const Config& other)
 		index = other.index;
 		autoindex = other.autoindex;
 		root = other.root;
+		alias = other.alias;
 		error_pages = other.error_pages;
 		upload_allowed = other.upload_allowed;
 		upload_store = other.upload_store;

@@ -20,6 +20,7 @@ class	Config
 		s_return							return_info;
 		unsigned long long					client_max_body_size;
 		std::string							root;
+		std::string							alias;
 		std::vector<std::string>			index;
 		bool								autoindex;
 		std::map<int, std::string>			error_pages;

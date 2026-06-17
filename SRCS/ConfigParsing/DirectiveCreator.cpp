@@ -11,6 +11,7 @@
 #include "MethodsDirective.hpp"
 #include "ClientMaxDirective.hpp"
 #include "RootDirective.hpp"
+#include "AliasDirective.hpp"
 #include "IndexDirective.hpp"
 #include "AutoindexDirective.hpp"
 #include "UploadDirective.hpp"
@@ -59,6 +60,11 @@ static ADirective*	createRoot(void)
 	return (new RootDirective());
 }
 
+static ADirective*	createAlias(void)
+{
+	return (new AliasDirective());
+}
+
 static ADirective*	createIndex(void)
 {
 	return (new IndexDirective());
@@ -96,6 +102,7 @@ DirectiveCreator::t_creator_map	 DirectiveCreator::_create_map(void)
 	map["methods"]				= &createMethods;
 	map["client_max_body_size"]	= &createClientMax;
 	map["root"]					= &createRoot;
+	map["alias"]				= &createAlias;
 	map["index"]				= &createIndex;
 	map["autoindex"]			= &createAutoindex;
 	map["upload"]				= &createUpload;

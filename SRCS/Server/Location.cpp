@@ -65,6 +65,11 @@ const std::string&	Location::getRoot(void) const
 	return (_config.root);
 }
 
+const std::string&	Location::getAlias(void) const
+{
+	return (_config.alias);
+}
+
 const std::vector<std::string>&	Location::getIndex(void) const
 {
 	return (_config.index);
@@ -122,6 +127,7 @@ std::ostream&	operator<<(std::ostream& os, const Location& obj)
 	os << "\n";
 	os << "Client max body size: " << obj.getClientMaxBodySize() << "\n";
 	os << "Root: " << obj.getRoot() << "\n";
+	os << "Alias: " << obj.getAlias() << "\n";
 	os << "Index: " << obj.getIndex() << "\n";
 	os << "Autoindex: ";
 	if (obj.isAutoindex())

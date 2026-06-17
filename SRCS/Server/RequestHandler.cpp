@@ -652,7 +652,13 @@ std::string RequestHandler::getErrorPagePath(HttpStatus error_code)
 std::string RequestHandler::getNormalPagePath(void)
 {
 	std::string root = _location->getRoot();
+	std::string alias = _location->getAlias();
 	std::string uri = getPathOnly(_httpRequest.getPath());
+
+	if (root == "" && alias != "")
+		uri.erase(0, _location->getPrefix().length());
+	if (root == "")
+		root = alias;
 	if (!root.empty() && root[root.length() - 1] == '/' && !uri.empty() && uri[0] == '/')
 	{
 		root.erase(root.length() - 1);

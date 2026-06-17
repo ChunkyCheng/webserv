@@ -2,7 +2,7 @@
 #include "Config.hpp"
 
 AliasDirective::AliasDirective(void)
-	:ADirective("root", ROOT_RULES)
+	:ADirective("alias", ROOT_RULES)
 {
 }
 
